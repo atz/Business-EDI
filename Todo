@@ -1,0 +1,7 @@
+TODO list for Perl module Business::EDI
+
+- Everything: segments, data elements, other message types
+- I18n
+- robust tests
+
+
