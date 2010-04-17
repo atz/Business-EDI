@@ -743,3 +743,6 @@ sub codehash {
     return \%code_hash;
 }
 
+1;
+__END__
+
