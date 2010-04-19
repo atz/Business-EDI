@@ -37,11 +37,10 @@ sub parse_ordrsp {
                 "EDI segment $tag/S009/0051 designates 'UN' as controlling agency"
             );
         } elsif ($tag eq 'BGM') {
-            my ($bgm, $msgtype);
+            my ($bgm, $msgtype, $codelist);
             print "BGM dump: ", Dumper($segbody);
-            ok( $bgm = Business::EDI::Segment::BGM->new($segbody),
-                "Business::EDI::Segment::BGM->new"
-            );
+            ok( $bgm = Business::EDI::Segment::BGM->new($segbody), "Business::EDI::Segment::BGM->new");
+            ok( $codelist = $bgm->seg4343->codelist, "Business::EDI::Segment::BGM->new(...)->seg4343->codelist");
             ok( $msgtype = Business::EDI->codelist('ResponseTypeCode', $segbody->{4343}),
                 sprintf("Business::EDI->codelist('ResponseTypeCode', \$X): $tag/4343 Response Type Code '%s' recognized", ($segbody->{4343} || ''))
             );
@@ -49,8 +48,8 @@ sub parse_ordrsp {
             ok($msgtype->label eq $bgm->seg4343->label, "Different constructor paths, same label");
             ok($msgtype->value eq $bgm->seg4343->value, "Different constructor paths, same value");
             my $seg4343 = $bgm->seg4343;
-            print 'bgm->seg4343     dump: ', Dumper($seg4343);
             print 'ResponseTypeCode dump: ', Dumper($msgtype);
+            print 'bgm->seg4343     dump: ', Dumper($seg4343);
             note(sprintf "Business::EDI->codelist('ResponseTypeCode', \$X): $tag/4343 response type: %s - %s (%s)", $msgtype->code, $msgtype->label, $msgtype->value);
             note(sprintf "Business::EDI::Segment::BGM->new(...)->seg4343\ : $tag/4343 response type: %s - %s (%s)", $seg4343->code, $seg4343->label, $seg4343->value);
             my $fcn = $bgm->seg1225;
@@ -67,9 +66,8 @@ sub parse_ordrsp {
                 ok( $obj = Business::EDI::Segment::RFF->new($body), 
                     "EDI $tag/$label converts to an object"
                 );
-                ok( ($obj->seg1153 and $obj->seg1153->value eq 'LI'),
-                    "EDI $tag/$label object has expected 1153 value ('LI')"
-                );
+                ok($obj->seg1153, "EDI $tag/$label/seg1153 exists");
+                is($obj->seg1153->value, 'LI', "EDI $tag/$label/seg1153 has value ('LI')") or print Dumper($obj->seg1153);
             }
             push @lins, \@chunks;
         } else {
