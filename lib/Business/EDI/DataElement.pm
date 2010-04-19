@@ -37,6 +37,7 @@ sub init {
     $codes->{$code} or return;
     $self->{code } = $code;
     $self->{label} = $codes->{$code};
+    $self->{value} = shift if @_;
     return $self;
 }
 
@@ -74,7 +75,7 @@ sub codelist {
 
 sub code  { my $self = shift; @_ and $self->{code } = shift; return $self->{code }; }
 sub label { my $self = shift; @_ and $self->{label} = shift; return $self->{label}; }
-sub value { my $self = shift; return $self->code(@_); }
+sub value { my $self = shift; @_ and $self->{value} = shift; return $self->{value}; }
 sub desc {
     my $self = shift;
     local $_ = $self->label();
