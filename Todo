@@ -1,7 +1,11 @@
 TODO list for Perl module Business::EDI
 
-- Everything: segments, data elements, other message types
+- Everything: other Message types, Segments, Composites
 - I18n
 - robust tests
+- Lots of docs
 
+Long Term:
+- input and output of actual EDI files
+- specific versioning (like D04B vs D97A)
 
