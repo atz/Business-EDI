@@ -12,6 +12,11 @@ my %codes = ();  # caching
 sub bad_names {   # CLASS method
     return grep {exists $codes{$_} and ! $codes{$_}} keys %codes;   # if it's there, and empty/undef, it's bad
 }
+sub bad_name {
+    my $name = shift or return;
+    exists $codes{$name} or return 0;       # havne't seen it yet, doesn't mean it's bad
+    return defined($codes{$name}) ? 0 : 1;  # but if we've seen it, and it's undef, it's bad.
+}
 sub clear_cache {
     my $size = scalar keys %codes;
     %codes = ();
@@ -48,7 +53,7 @@ sub get_codelist {
         carp "Empty target for get_codelist";
         return;
     }
-    if (grep {$_ eq $target} bad_names()) {
+    if (bad_name($target)) {
         carp "get_codelist already failed on previous attempts for target $target";
         return;
     }
