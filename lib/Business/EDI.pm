@@ -93,7 +93,10 @@ sub subelement {
         return;
     }
     $debug and print STDERR "good: we got a body in class " . (ref($self) || $self) . "\n";
-    $codelist_map ||= Business::EDI::CodeList->codemap;
+    unless ($codelist_map) {
+        Business::EDI::CodeList->require;
+        $codelist_map = Business::EDI::CodeList->codemap;
+    }
     my $new = {};
     foreach (keys %$body) {
         my $ref = ref($body->{$_});
