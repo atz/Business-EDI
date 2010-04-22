@@ -1,5 +1,7 @@
 package Business::EDI::CodeList;
 
+use base qw/Business::EDI/;
+
 use strict;
 use warnings;
 use Carp;
@@ -17,7 +19,7 @@ our $verbose = 0;
 our %codemap;
 
 sub new_codelist {      # constructor: NOT to be overridden, first argument is string name like 'ResponseTypeCode'
-    my $class = shift;  # note: we don't return objects of this class
+    my $class = shift;  # note: we don't return objects of this class, we return an object from the subclasses
     my $type  = shift or carp "No CodeList object type specified";
     $type or return;
     if ($type =~ /^\d{4}$/) {
@@ -82,6 +84,16 @@ sub listnumber { my $self = shift; @_ and $self->{listnumber} = shift; return $s
 sub label      { my $self = shift; @_ and $self->{label}      = shift; return $self->{label};      }
 sub desc       { my $self = shift; @_ and $self->{desc }      = shift; return $self->{desc };      }
 sub value      { my $self = shift; @_ and $self->{value}      = shift; return $self->{value};      }
+
+sub name2number {
+    my $self = shift;
+    my $name = shift or return;
+    my $map  = $self->codemap;
+    foreach (keys %$map) {
+        $map->{$_} eq $name and return $_;
+    }
+    return; # undef, no match
+}
 
 sub codemap {
     my $self = shift;

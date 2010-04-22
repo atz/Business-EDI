@@ -1,22 +1,20 @@
 package Business::EDI::Segment::BGM;
 
+use base qw/Business::EDI::Segment/;
+
 use strict;
 use warnings;
-
 use Carp;
-use Business::EDI::DataElement;
-use Business::EDI::CodeList;
 
-our $AUTOLOAD;
 our $VERSION = 0.01;
-
 our $debug = 0;
 our @codes = (
+    'C002',
     1001,
     1131,
     3055,
     1000,
-  # C106,
+    'C106',
     1004,
     1056,
     1060,
@@ -26,62 +24,14 @@ our @codes = (
 );
 our @required_codes = ();
 
-sub carp_error {
-    carp __PACKAGE__ . ': ' . shift;
-    return;   
-}
-
 sub new {
     my $class = shift;
-    my $body  = shift;
-    
-    unless ($body and ref($body) and ref($body) eq 'HASH') {
-        return carp_error "argument to new() must be HASHREF";
+    my $obj = Business::EDI::Segment::unblessed(shift, \@codes, $debug);
+    unless ($obj) {
+        carp "Unblessed object creation failed";
+        return;
     }
-    $debug and print STDERR "good: we got a body and required codes\n";
-    my $self = bless({}, $class);
-    foreach (@codes) {
-        $self->{_permitted}->{$_} = 1;
-        if ($body->{$_}) {
-            my $ref = ref($body->{$_});
-            unless ($ref) {
-                $self->{$_} = Business::EDI::DataElement->new($_, $body->{$_});
-                next;   #like Business::EDI::DataElement->new('1225', '582830');
-            }
-            if ('HASH' eq $ref) {
-                if (scalar keys(%$ref) == 1) {
-                    my $key = (keys(%$ref))[0];
-                    $self->{$_} = Business::EDI::CodeList->new_codelist($key, $body->{$_}->{$key});
-                } else {
-                    carp "HASH ref in body has unexpected number of keys: " . scalar keys(%$ref);
-                }
-            } else {
-                carp "Strange ref in body argument, expected HASH ref, got $ref ref.  Ignoring.";
-            }
-        }
-    }
-    $self->debug($debug);
-    return $self;
-}
-
-sub DESTROY {}  #
-sub AUTOLOAD {
-    my $self  = shift;
-    my $class = ref($self) or croak "AUTOLOAD error: $self is not an object";
-    my $name  = $AUTOLOAD;
-
-    $name =~ s/.*://;   #   strip leading package stuff
-    $name =~ s/^s(eg(ment)?)?//i;  #   strip segment (to avoid numerical method names)
-
-    unless (exists $self->{_permitted}->{$name}) {
-        croak "Cannot access '$name' field of class '$class'"; 
-    }
-
-    if (@_) {
-        return $self->{$name} = shift;
-    } else {
-        return $self->{$name};
-    }
+    return bless($obj, $class);
 }
 
 1;

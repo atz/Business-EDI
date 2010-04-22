@@ -2,13 +2,13 @@ package Business::EDI;
 
 use strict;
 use warnings;
-# use Carp;
+use Carp;
 # use Data::Dumper;
 
 our $VERSION = 0.01;
 
-use Business::EDI::CodeList;
-# our $verbose = 0;
+use UNIVERSAL::require;
+our $debug = 0;
 
 sub new {
     my($class, %args) = @_;
@@ -19,6 +19,7 @@ sub new {
 
 sub codelist {
     my $self = shift;
+    Business::EDI::CodeList->require;
     Business::EDI::CodeList->new_codelist(@_);
 }
 
@@ -34,7 +35,80 @@ sub message {
 
 sub dataelement {
     my $self = shift;
-#    Business::EDI::DataElement->new(@_);
+    Business::EDI::DataElement->require;
+    Business::EDI::DataElement->new(@_);
+}
+
+# similar to autoload, but by argument, does get and set
+sub part {
+    my $self  = shift;
+    my $class = ref($self) or croak "part() object method error: $self is not an object";
+    my $name  = shift or return;
+
+    unless (exists $self->{_permitted}->{$name}) {
+        carp "part() error: Cannot access '$name' field of class '$class'"; 
+        return;     # authoload would have croaked here
+    }
+
+    if (@_) {
+        return $self->{$name} = shift;
+    } else {
+        return $self->{$name};
+    }
+}
+
+
+# Example data:
+# 'BGM', {
+#     '1004' => '582822',
+#     '4343' => 'AC',
+#     '1225' => '29',
+#     'C002' => {
+#        '1001' => '231'
+#     }
+# }
+
+our $codelist_map;
+
+# Tricky recursive constructor!
+sub subelement {
+    my $self = shift;
+    my $body = shift;
+    if (! $body) {
+        carp "required argument to subelement() empty";
+        return;
+    }
+    ref($body) =~ /^Business::EDI/ and return $body;    # it's already an EDI object, return it
+
+    if (ref($body) eq 'ARRAY') {
+        if (scalar(@$body) != 2) {
+            carp "Array expected to be psuedohash with 2 elements, instead got " . scalar(@$body);
+            return; # [(map {ref($_) ? $self->subelement($_) : $_} @$body)];     # recursion
+        } else {
+            $body = {$body->[0] => $body->[1]};
+        }
+    }
+    elsif (ref($body) ne 'HASH') {
+        carp "argument to subelement() should be ARRAYref or HASHref or Business::EDI subobject, not type '" . ref($body) . "'";
+        return;
+    }
+    $debug and print STDERR "good: we got a body in class " . (ref($self) || $self) . "\n";
+    $codelist_map ||= Business::EDI::CodeList->codemap;
+    my $new = {};
+    foreach (keys %$body) {
+        my $ref = ref($body->{$_});
+        if ($codelist_map->{$_}) {      # If the key is in the codelist map, it's a codelist
+            $new->{$_} = Business::EDI::CodeList->new_codelist($_, $body->{$_});
+        } elsif ($ref) {
+            $new->{$_} = $self->subelement($body->{$_})     # ELSE, break the ref down (recursively)
+                or carp "Bad ref ($ref) in body for key $_.  Subelement not created.";
+        } else {
+            $new->{$_} = Business::EDI::DataElement->new($_, $body->{$_});      # Otherwise, a terminal (non-ref) data node means it's a DataElement
+                  # like Business::EDI::DataElement->new('1225', '582830');
+        }
+        (scalar(keys %$body) == 1) and return $new->{$_};   # important: if that's our only key/pair, return the object itself, no wrapper.
+    }
+    return $new;
 }
 
 1;

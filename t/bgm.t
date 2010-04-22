@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 38;
+use Test::More tests => 32;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -52,10 +52,14 @@ foreach my $key (keys %$data) {
         "Business::EDI->subelement({$key => $data->{$key}}): Code $key recognized"
     );
     note "ref(subelement): " . ref($msgtype);
+    if ($key eq 'C002') {
+        ok($msgtype->part(1001), "Extra test for direct access to element grouped under C002");
+    } else {
+    }
+    is_deeply($msgtype, $bgm->part($key),        "Different constructor paths, identical object");
     is($msgtype->code,  $bgm->part($key)->code , "Different constructor paths, same code");
     is($msgtype->label, $bgm->part($key)->label, "Different constructor paths, same label");
     is($msgtype->value, $bgm->part($key)->value, "Different constructor paths, same value");
-    is_deeply($msgtype, $bgm->part($key),        "Different constructor paths, identical object");
     $verbose and print 'codelist dump: ', Dumper($msgtype);
 }
 
