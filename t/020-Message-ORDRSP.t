@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 577;
+use Test::More tests => 638;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -40,18 +40,18 @@ sub parse_ordrsp {
             my ($bgm, $msgtype, $codelist);
             print "BGM dump: ", Dumper($segbody);
             ok( $bgm = Business::EDI::Segment::BGM->new($segbody), "Business::EDI::Segment::BGM->new");
-            ok( $codelist = $bgm->seg4343->codelist, "Business::EDI::Segment::BGM->new(...)->seg4343->codelist");
+            ok( $codelist = $bgm->part4343, "Business::EDI::Segment::BGM->new(...)->seg4343->codelist");
             ok( $msgtype = Business::EDI->codelist('ResponseTypeCode', $segbody->{4343}),
                 sprintf("Business::EDI->codelist('ResponseTypeCode', \$X): $tag/4343 Response Type Code '%s' recognized", ($segbody->{4343} || ''))
             );
-            ok($msgtype->code  eq $bgm->seg4343->code , "Different constructor paths, same code");
-            ok($msgtype->label eq $bgm->seg4343->label, "Different constructor paths, same label");
-            ok($msgtype->value eq $bgm->seg4343->value, "Different constructor paths, same value");
+            is($msgtype->label, $bgm->seg4343->label, "Different constructor paths, same label");
+            is($msgtype->value, $bgm->seg4343->value, "Different constructor paths, same value");
+            is($msgtype->desc,  $bgm->seg4343->desc,  "Different constructor paths, same description"); 
             my $seg4343 = $bgm->seg4343;
             print 'ResponseTypeCode dump: ', Dumper($msgtype);
             print 'bgm->seg4343     dump: ', Dumper($seg4343);
-            note(sprintf "Business::EDI->codelist('ResponseTypeCode', \$X): $tag/4343 response type: %s - %s (%s)", $msgtype->code, $msgtype->label, $msgtype->value);
-            note(sprintf "Business::EDI::Segment::BGM->new(...)->seg4343\ : $tag/4343 response type: %s - %s (%s)", $seg4343->code, $seg4343->label, $seg4343->value);
+            note(sprintf "Business::EDI->codelist('ResponseTypeCode', \$X): $tag/4343 response type: %s - %s (%s)", $msgtype->value, $msgtype->label, $msgtype->desc);
+            note(sprintf "Business::EDI::Segment::BGM->new(...)->seg4343\ : $tag/4343 response type: %s - %s (%s)", $seg4343->value, $seg4343->label, $seg4343->desc);
             my $fcn = $bgm->seg1225;
             return unless ok( $fcn, 
                 sprintf "EDI $tag/1225 Message Function Code '%s' is recognized", ($segbody->{1225} || ''));
