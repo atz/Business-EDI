@@ -8,6 +8,8 @@ use Carp;
 our $VERSION = 0.01;
 
 use UNIVERSAL::require;
+use Business::EDI::CodeList;
+use Business::EDI::DataElement;
 our $debug = 0;
 
 sub new {
@@ -19,7 +21,7 @@ sub new {
 
 sub codelist {
     my $self = shift;
-    Business::EDI::CodeList->require;
+    # Business::EDI::CodeList->require;
     Business::EDI::CodeList->new_codelist(@_);
 }
 
@@ -35,7 +37,7 @@ sub message {
 
 sub dataelement {
     my $self = shift;
-    Business::EDI::DataElement->require;
+    # Business::EDI::DataElement->require;
     Business::EDI::DataElement->new(@_);
 }
 
@@ -93,10 +95,7 @@ sub subelement {
         return;
     }
     $debug and print STDERR "good: we got a body in class " . (ref($self) || $self) . "\n";
-    unless ($codelist_map) {
-        Business::EDI::CodeList->require;
-        $codelist_map = Business::EDI::CodeList->codemap;
-    }
+    $codelist_map ||= Business::EDI::CodeList->codemap;
     my $new = {};
     foreach (keys %$body) {
         my $ref = ref($body->{$_});

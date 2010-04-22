@@ -3,12 +3,11 @@
 
 use strict; use warnings;
 
-use Test::More tests => 32;
+use Test::More tests => 6;
 
 BEGIN {
-    use_ok('Data::Dumper');
     use_ok('Business::EDI');
-    use_ok('Business::EDI::Segment::BGM');
+    use_ok('Business::EDI::CodeList');
 }
 
 my $data = {
@@ -20,42 +19,13 @@ my $data = {
     }
 };
 
-$Data::Dumper::Indent = 1;
-
-use vars qw/%code_hash $bgm/;
-
-print "data: ", Dumper($data);
-
-ok($bgm = Business::EDI::Segment::BGM->new($data), 'Business::EDI::Segment::BGM->new');
-ok($bgm->seg4343, "Autoload seg4343 accessor");
-is($bgm->seg4343->value, $data->{4343}, "seg4343 value");
-
-print "BGM: ", Dumper($bgm);
-
-my ($msgtype);
-ok($msgtype  = Business::EDI->codelist('ResponseTypeCode', $data->{4343}),
+my ($ob1);
+ok($ob1 = Business::EDI->codelist('ResponseTypeCode', $data->{4343}),
     sprintf("Business::EDI->codelist('ResponseTypeCode', \$X): 4343 Response Type Code '%s' recognized", ($data->{4343} || ''))
 );
-foreach my $key (keys %$data) {
-    my ($codelist);
-    ok($codelist = $bgm->seg4343->codelist, "Business::EDI::Segment::BGM->new(...)->seg4343->codelist");
-    is($msgtype->code,  $bgm->seg4343->code , "Different constructor paths, same code");
-    is($msgtype->label, $bgm->seg4343->label, "Different constructor paths, same label");
-    is($msgtype->value, $bgm->seg4343->value, "Different constructor paths, same value");
-    my $seg4343 = $bgm->seg4343;
-    print 'ResponseTypeCode dump: ', Dumper($msgtype);
-    print 'bgm->seg4343     dump: ', Dumper($seg4343);
-    note(sprintf "Business::EDI->codelist('ResponseTypeCode', \$X): 4343 response type: %s - %s (%s)", $msgtype->code, $msgtype->label, $msgtype->value);
-    note(sprintf "Business::EDI::Segment::BGM->new(...)->seg4343\ : 4343 response type: %s - %s (%s)", $seg4343->code, $seg4343->label, $seg4343->value);
-    my $fcn = $bgm->seg1225;
-    next unless ok( $fcn, 
-        sprintf "EDI 1225 Message Function Code '%s' is recognized", ($data->{1225} || ''));
-}
+is_deeply($ob1, Business::EDI->codelist(4343, $data->{4343}), "ResponseTypeCode and 4343 create identical objects");
 
-# ok($slurp = join('', <DATA>),     "Slurped data from DATA handle");
-
-# note("ref(\$obj): " . ref($perl));
-# note("    \$obj : " .     $perl );
-
-note("done");
+my $pre = "Identical constructors: Business::EDI->codelist and";
+is_deeply($ob1, Business::EDI::CodeList->new_codelist(4343,    $data->{4343}), "$pre Business::EDI::CodeList->new_codelist");
+is_deeply($ob1, Business::EDI::CodeList::ResponseTypeCode->new($data->{4343}), "$pre Business::EDI::CodeList::ResponseTypeCode->new");
 
