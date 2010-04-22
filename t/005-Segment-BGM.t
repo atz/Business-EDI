@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 32;
+use Test::More tests => 33;
 
 BEGIN {
     use_ok('Data::Dumper');
