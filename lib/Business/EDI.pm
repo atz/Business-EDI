@@ -5,12 +5,35 @@ use warnings;
 use Carp;
 # use Data::Dumper;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 use UNIVERSAL::require;
 use Business::EDI::CodeList;
+use Business::EDI::Composite;
 use Business::EDI::DataElement;
 our $debug = 0;
+
+our $AUTOLOAD;
+sub DESTROY {}  #
+sub AUTOLOAD {
+    my $self  = shift;
+    my $class = ref($self) or croak "AUTOLOAD error: $self is not an object, looking for $AUTOLOAD";
+    my $name  = $AUTOLOAD;
+
+    $name =~ s/.*://;                # strip leading package stuff
+    $name =~ s/^s(eg(ment)?)?//i or  # strip segment (a prefix to avoid numerical method names)
+    $name =~ s/^p(art)?//i;          # strip part -- autoload parallel like ->part4343 to ->part(4343)
+
+    unless (exists $self->{_permitted}->{$name}) {
+        croak "AUTOLOAD error: Cannot access '$name' field of class '$class'"; 
+    }
+
+    if (@_) {
+        return $self->{$name} = shift;
+    } else {
+        return $self->{$name};
+    }
+}
 
 sub new {
     my($class, %args) = @_;
@@ -39,6 +62,45 @@ sub dataelement {
     my $self = shift;
     # Business::EDI::DataElement->require;
     Business::EDI::DataElement->new(@_);
+}
+
+
+sub error {
+    my ($self, $msg, $quiet) = @_;
+    $msg or return $self->{error};  # just an accessor
+    ($debug or ! $quiet) and carp $msg;
+    return $self->{error} = $msg;
+}
+
+sub carp_error {
+    carp shift;
+    return;     # undef: important!
+}
+
+=head2 ->unblessed($body, \@coderef)
+
+=cut
+
+sub unblessed {     # call like Business::EDI->unblessed(\%hash, \@codes);
+    my $class    = shift;
+    my $body     = shift;
+    my $codesref = shift;
+    $body     or return carp_error "1st required argument to unblessed() is EMPTY";
+    $codesref or return carp_error "2nd required argument to unblessed() is EMPTY";
+    unless (ref($body)     eq 'HASH') {
+        return carp_error "1st argument to unblessed() must be HASHREF, not '" . ref($body) . "'";
+    }
+    unless (ref($codesref) eq 'ARRAY') {
+        return carp_error "2nd argument to unblessed() must be ARRAYREF, not '" . ref($codesref) . "'";
+    }
+    $debug and print STDERR "good: unblessed() got a body\n";
+    my $self = {};
+    foreach (@$codesref) {
+        $self->{_permitted}->{$_} = 1;
+        $body->{$_} or next;
+        $self->{$_} = Business::EDI->subelement({$_ => $body->{$_}}) || $body->{$_};
+    }
+    return $self;
 }
 
 # similar to autoload, but by argument, does get and set
@@ -80,11 +142,15 @@ sub subelement {
         carp "required argument to subelement() empty";
         return;
     }
+    unless (ref $body) {
+        $debug and carp "subelement() got a regular scalar argument. Returning it ('$body') as subelement";
+        return $body;
+    }
     ref($body) =~ /^Business::EDI/ and return $body;    # it's already an EDI object, return it
 
     if (ref($body) eq 'ARRAY') {
         if (scalar(@$body) != 2) {
-            carp "Array expected to be psuedohash with 2 elements, instead got " . scalar(@$body);
+            carp "Array expected to be psuedohash with 2 elements, or wrapper with 1, instead got " . scalar(@$body);
             return; # [(map {ref($_) ? $self->subelement($_) : $_} @$body)];     # recursion
         } else {
             $body = {$body->[0] => $body->[1]};
@@ -101,9 +167,18 @@ sub subelement {
         my $ref = ref($body->{$_});
         if ($codelist_map->{$_}) {      # If the key is in the codelist map, it's a codelist
             $new->{$_} = Business::EDI::CodeList->new_codelist($_, $body->{$_});
+        } elsif ($_ =~ /^C\d{3}$/) {
+            $new->{$_} = Business::EDI::Composite->new({$_ => $body->{$_}})     # Cxxx codes are for Composite data elements
+                or carp "Bad ref ($ref) in body for key $_.  Composite subelement not created";
+        } elsif ($ref eq 'ARRAY') {
+            my $count = scalar(@{$body->{$_}});
+            $count == 1 or carp "Repeated section '$_' appears $count times.  Only handling first appearance";  # TODO: fix this
+            $new->{repeats}->{$_} = -1;
+            $new->{$_} = $self->subelement($body->{$_}->[0])                 # ELSE, break the ref down (recursively)
+                or carp "Bad ref ($ref) in body for key $_.  Subelement not created";
         } elsif ($ref) {
-            $new->{$_} = $self->subelement($body->{$_})     # ELSE, break the ref down (recursively)
-                or carp "Bad ref ($ref) in body for key $_.  Subelement not created.";
+            $new->{$_} = $self->subelement($body->{$_})                 # ELSE, break the ref down (recursively)
+                or carp "Bad ref ($ref) in body for key $_.  Subelement not created";
         } else {
             $new->{$_} = Business::EDI::DataElement->new($_, $body->{$_});      # Otherwise, a terminal (non-ref) data node means it's a DataElement
                   # like Business::EDI::DataElement->new('1225', '582830');

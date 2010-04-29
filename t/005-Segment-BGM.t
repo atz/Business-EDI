@@ -58,10 +58,10 @@ foreach my $key (keys %$data) {
             ok($msgtype->part(1001), "Extra test for direct access to element grouped under C002");
         }
     }
-    is_deeply($msgtype, $bgm->part($key),        "Different constructor paths, identical object");
-    is($msgtype->code,  $bgm->part($key)->code , "Different constructor paths, same code");
-    is($msgtype->label, $bgm->part($key)->label, "Different constructor paths, same label");
-    is($msgtype->value, $bgm->part($key)->value, "Different constructor paths, same value");
+    is_deeply($msgtype, $bgm->part($key),        "Different constructor paths, identical object ($key)");
+    is($msgtype->code,  $bgm->part($key)->code , "Different constructor paths, same code ($key)");
+    is($msgtype->label, $bgm->part($key)->label, "Different constructor paths, same label ($key)");
+    is($msgtype->value, $bgm->part($key)->value, "Different constructor paths, same value ($key)");
     $verbose and note(ref($msgtype)  . ' dump: ' . Dumper($msgtype));
 }
 

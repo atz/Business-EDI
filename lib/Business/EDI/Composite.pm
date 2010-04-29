@@ -3,7 +3,10 @@ package Business::EDI::Composite;
 use base 'Business::EDI';
 
 use strict; use warnings;
-my $VERSION = 0.01;
+use Carp;
+
+my $VERSION = 0.02;
+my $debug;
 
 my $guts = {
 'C001' => { label => 'TRANSPORT MEANS', desc => 'Code and/or name identifying the type of means of transport.', parts =>{
@@ -1165,4 +1168,120 @@ my $guts = {
     2118 => { pos => '040', def => 'an..35', },
 }},
 };
+
+sub codemap {
+    # my $self = shift;
+    return $guts;
+}
+
+sub chunk {
+    my ($class, $key) = @_;
+    my $chunk = $guts->{$key};
+    if (! $chunk) {
+         $debug and carp __PACKAGE__ . " : Composite key '$key' unrecognized";
+         return;
+    }
+    return $chunk;
+}
+
+sub spec_parts {
+    my ($class, $key) = @_;
+    if (! $key) {
+        carp __PACKAGE__ . "->spec_parts() called without required argument for ccode key";
+        return;
+    }
+    my $chunk = $class->chunk($key);
+    return $chunk->{parts};
+}
+
+sub parts {
+    my $self = shift;
+    unless (ref $self) {    # if it is just Business::EDI::Composite->parts
+        return $self->spec_parts(@_);   # just do a lookup
+    }
+    my $chunk = $self->chunk(@_ ? shift : $self->ccode) or return;
+    return $chunk->{parts};
+}
+sub code {
+    my $self = shift;
+    @_ and $self->{ccode} = shift;
+    return $self->{ccode};
+}
+sub ccode {
+    my $self = shift;
+    @_ and $self->{ccode} = shift;
+    return $self->{ccode};
+}
+sub label {
+    my $self = shift;
+    @_ and $self->{label} = shift;
+    return $self->{label};
+}
+sub desc {
+    my $self = shift;
+    @_ and $self->{desc} = shift;
+    return $self->{desc};
+}
+sub value {
+    my $self = shift;
+    @_ and $self->{value} = shift;
+    return $self->{value};
+}
+
+=head2 ->new($body)
+
+$body is a hashref like:
+
+  { 'C002' => {
+       '1001' => '231'
+    }
+  }
+
+The top level should have only one composite "Cxxx" key.
+
+=cut
+
+sub new {
+    my $class = shift;
+    my $body  = shift;
+    unless ($body) {
+        carp __PACKAGE__ . " : empty argument to new()";
+        return;
+    }
+    unless (ref($body) eq 'HASH') {
+        carp __PACKAGE__ . " : argument to new() must be a HASHref, not '" . ref($body) . "'";
+        return;
+    }
+
+    my (@keys, $key, $chunk, $repeat);
+    @keys = keys %$body;
+    unless (scalar @keys == 1) {
+        carp __PACKAGE__ . " : HASHref arg. to new() must have (only) 1 top level key (e.q. C977).  We got " . scalar(@keys);
+        return;
+    }
+    $key = $keys[0];
+    unless ($chunk = $guts->{$key}) {   # assignment, not comparison
+        carp __PACKAGE__ . " : Composite key '$key' unrecognized";
+        return;
+    }
+    my $value = $body->{$key};
+    if (ref($value) eq 'ARRAY') {
+        if (scalar @$value == 1) {
+            $debug and carp "Flattening repeating $key array with only 1 element";
+            $value = $value->[0];
+        } else { 
+            carp "Repeating value actually repeats (" . scalar(@$value) . " times).  Not implemented"; # TODO
+            return;
+        }
+        $repeat = -1;
+    }
+    my $self = $class->SUPER::unblessed($value, [(keys %{$chunk->{parts}})], $debug);     # send the "parts" hashref
+    $self->{ccode} = $key;             # the Cxxx key
+    $self->{value} = $value;           # the hashref value associated with the key
+    $self->{label} = $chunk->{label};  # label from spec
+    $self->{desc}  = $chunk->{desc};   # desc from spec
+    $self->{repeat}= $repeat if $repeat;
+    return bless $self, $class;
+}
+
 1;

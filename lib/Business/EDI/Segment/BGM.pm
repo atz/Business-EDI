@@ -26,7 +26,7 @@ our @required_codes = ();
 
 sub new {
     my $class = shift;
-    my $obj = Business::EDI::Segment::unblessed(shift, \@codes, $debug);
+    my $obj = $class->SUPER::unblessed(shift, \@codes, $debug);
     unless ($obj) {
         carp "Unblessed object creation failed";
         return;
