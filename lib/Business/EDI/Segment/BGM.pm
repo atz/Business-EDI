@@ -20,7 +20,6 @@ our @codes = (
     1060,
     1225,
     4343,
-    'debug'
 );
 our @required_codes = ();
 

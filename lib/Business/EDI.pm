@@ -8,6 +8,7 @@ use Carp;
 our $VERSION = 0.02;
 
 use UNIVERSAL::require;
+use File::Find::Rule;
 use Business::EDI::CodeList;
 use Business::EDI::Composite;
 use Business::EDI::DataElement;
@@ -24,8 +25,10 @@ sub AUTOLOAD {
     $name =~ s/^s(eg(ment)?)?//i or  # strip segment (a prefix to avoid numerical method names)
     $name =~ s/^p(art)?//i;          # strip part -- autoload parallel like ->part4343 to ->part(4343)
 
+    warn "AUTOLOADING '$name' for " . $class;
     unless (exists $self->{_permitted}->{$name}) {
-        croak "AUTOLOAD error: Cannot access '$name' field of class '$class'"; 
+        # first try to reach trhough any Cxxx Composites, if the target is unique
+        return __PACKAGE__->_deepload($self, $name, @_); # not $self->_deepload - avoid recursion
     }
 
     if (@_) {
@@ -35,10 +38,63 @@ sub AUTOLOAD {
     }
 }
 
+sub _deepload {
+    my $pkg  = shift; # does nothing
+    my $self = shift    or return;
+    my $name = shift    or return;
+    $self->{_permitted} or return;
+
+    my @keys = grep {/^C\d{3}$/} keys %{$self->{_permitted}};
+    my $ccount = scalar(@keys);
+    warn "Looking for $name under $ccount Composites: " . join(' ', @keys);
+    @keys = grep {
+        $self->{$_}               and
+        $self->{$_}->{_permitted} and
+        $self->{$_}->{$name}
+        } @keys;
+    my $hitcount = scalar(@keys);
+    warn "Found $name possible in $hitcount Composites: " . join(' ', @keys);
+    if ($hitcount == 1) {
+        if (@_) {
+            return $self->{$keys[0]}->{$name} = shift;
+        } else {
+            return $self->{$keys[0]}->{$name};
+        }
+    } elsif ($hitcount > 1) {
+        croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self) . "', "
+            . " $hitcount indeterminate matches in collapsable subelements";
+    }
+    croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self) . "' (or $ccount collapsable subelements)"; 
+}
+
+our $error;          # for the whole class
+our $spec_dir;       # for the whole class
+our $spec_map = {
+    message   => 'DMD',
+    segment   => 'DSD',
+    composite => 'DCD',
+    codelist  => 'DCL',
+    element   => 'DED',
+};
+my %fields = (
+    spec_files => 1,
+);
+
+# Constructors
+
 sub new {
-    my($class, %args) = @_;
-    my $self = bless(\%args, $class);
-    # $self->{args} = {};
+    my ($class, %args) = @_;
+    my $stuff = {
+        _permitted => %fields,   
+    };
+    foreach (keys %args) {
+        $_ eq 'spec' and next;  # special case
+        $stuff->{_permitted}->{$_} or croak "Unrecognized argument to new: $_ => $args{$_}";
+    }
+    my $self = bless($stuff, $class);
+    if ($args{spec}) {
+        $self->spec($args{$_}) or croak "Unrecognized spec $args{$_}";
+    }
     return $self;
 }
 
@@ -65,9 +121,47 @@ sub dataelement {
 }
 
 
+sub get_spec_dir {
+    my $self = shift;
+    $self->{spec_dir} and return $self->{spec_dir};
+    $spec_dir         and return $spec_dir;
+    my $target = 'Business/EDI/data/edifact/untdid';    # path relative to @INC 
+    my @dirs = @INC;
+    foreach (split /\//, $target) {
+        @dirs = File::Find::Rule->maxdepth(1)->name($_)->directory()->in(@dirs);
+    }
+    # we use serial Find's so we don't have to care about OS/filesystem variations.  And we only do it once, typcially.
+    $debug and print STDERR "# spec_dir() found ", scalar(@dirs), " $target dirs:\n# ", join("\n# ", @dirs), "\n";
+    unless (@dirs) {
+        warn "Could not locate specifications directory ($target) in \@INC";
+        return;
+    }
+    return $spec_dir = $dirs[0];
+}
+sub spec {        # spec(code, nonfatal)
+    my $self = shift;
+    return $self->{spec} unless @_;
+    my $code = shift;
+    my @files = $self->get_spec_files($code);
+    unless (@files) {
+        $self->error("Unrecognized spec code $code (no csv files)");
+        return;
+    }
+    $self->{spec_files} = \@files;
+    return $self->{spec}= $code;
+}
+sub get_spec_files {
+    my $self = shift;
+    my $code = @_ ? shift : $self->spec;
+    $code or return carp_error("No EDI spec revision argument to spec_files().  Nothing to look for!");
+    my $dir = $self->get_spec_dir or return carp_error("EDI Specifications directory missing");
+    return File::Find::Rule->maxdepth(1)->name("*.$code.csv")->file()->in($dir);
+}
+
+# Accessor get/set methods
 sub error {
     my ($self, $msg, $quiet) = @_;
-    $msg or return $self->{error};  # just an accessor
+    $msg or return $self->{error} || $error;  # just an accessor
     ($debug or ! $quiet) and carp $msg;
     return $self->{error} = $msg;
 }
@@ -77,7 +171,7 @@ sub carp_error {
     return;     # undef: important!
 }
 
-=head2 ->unblessed($body, \@coderef)
+=head2 ->unblessed($body, \@codes)
 
 =cut
 

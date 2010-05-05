@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 638;
+use Test::More tests => 754;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -66,8 +66,10 @@ sub parse_ordrsp {
                 ok( $obj = Business::EDI::Segment::RFF->new($body), 
                     "EDI $tag/$label converts to an object"
                 );
-                ok($obj->seg1153, "EDI $tag/$label/seg1153 exists");
-                is($obj->seg1153->value, 'LI', "EDI $tag/$label/seg1153 has value ('LI')") or print Dumper($obj->seg1153);
+                ok($obj->partC506->seg1153, "EDI $tag/$label/C506/seg1153 exists");
+                is($obj->partC506->seg1153->value, 'LI', "EDI $tag/$label/C506/seg1153 has value ('LI')") or print Dumper($obj->partC506->seg1153);
+                ok($obj->seg1153, "EDI $tag/$label/seg1153 exists (collapsable Composite)") or print "OBJ: " . Dumper($obj);
+                is($obj->seg1153->value, 'LI', "EDI $tag/$label/seg1153 has value ('LI') (collapsable Composite)") or print Dumper($obj->seg1153);
             }
             push @lins, \@chunks;
         } else {

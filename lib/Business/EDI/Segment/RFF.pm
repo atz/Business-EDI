@@ -6,31 +6,17 @@ use Carp;
 
 use base qw/Business::EDI::Segment/;
 
-=pod
-
-our $AUTOLOAD;
-sub DESTROY {}
-sub AUTOLOAD {
-    my $self = shift;
-    print STDERR __PACKAGE__ . "->AUTOLOADing\n";
-    $Business::EDI::Segment::AUTOLOAD = $AUTOLOAD;
-    $self->SUPER::AUTOLOAD(@_);
-}
-
-=cut
-
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 our $debug = 0;
 our $top   = 'C506';
 our @codes = (
     'C506',
-    1153,
-    1154,
-    1156,
+#   1153,
+#   1154,
+#   1156,
+#   1060,
     4000,
-    1060,
-    'debug'
 );
 our @required_codes = (1153);
 
