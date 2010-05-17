@@ -8,7 +8,9 @@ use Carp;
 our $VERSION = 0.02;
 
 use UNIVERSAL::require;
+use Data::Dumper;
 use File::Find::Rule;
+use File::Spec;
 use Business::EDI::CodeList;
 use Business::EDI::Composite;
 use Business::EDI::DataElement;
@@ -25,7 +27,7 @@ sub AUTOLOAD {
     $name =~ s/^s(eg(ment)?)?//i or  # strip segment (a prefix to avoid numerical method names)
     $name =~ s/^p(art)?//i;          # strip part -- autoload parallel like ->part4343 to ->part(4343)
 
-    warn "AUTOLOADING '$name' for " . $class;
+    $debug and warn "AUTOLOADING '$name' for " . $class;
     unless (exists $self->{_permitted}->{$name}) {
         # first try to reach trhough any Cxxx Composites, if the target is unique
         return __PACKAGE__->_deepload($self, $name, @_); # not $self->_deepload - avoid recursion
@@ -46,14 +48,14 @@ sub _deepload {
 
     my @keys = grep {/^C\d{3}$/} keys %{$self->{_permitted}};
     my $ccount = scalar(@keys);
-    warn "Looking for $name under $ccount Composites: " . join(' ', @keys);
+    $debug and warn "Looking for $name under $ccount Composites: " . join(' ', @keys);
     @keys = grep {
         $self->{$_}               and
         $self->{$_}->{_permitted} and
         $self->{$_}->{$name}
         } @keys;
     my $hitcount = scalar(@keys);
-    warn "Found $name possible in $hitcount Composites: " . join(' ', @keys);
+    $debug and warn "Found $name possible in $hitcount Composites: " . join(' ', @keys);
     if ($hitcount == 1) {
         if (@_) {
             return $self->{$keys[0]}->{$name} = shift;
@@ -77,24 +79,29 @@ our $spec_map = {
     element   => 'DED',
 };
 my %fields = (
-    spec_files => 1,
+    spec_files   => undef,
+    edi_flavor   => 'edifact',
+    default_spec => 'd08a',
+    interactive  => 0,
 );
 
 # Constructors
 
 sub new {
-    my ($class, %args) = @_;
-    my $stuff = {
-        _permitted => %fields,   
-    };
+    my $class = shift;
+    scalar(@_) % 2 and croak "Odd number of arguments to new() incorrect.  Use (name1 => value1) style.";
+    my (%args) = @_;
+    my $stuff = {_permitted => {(map {$_ => 1} keys %fields)}, %fields};
     foreach (keys %args) {
         $_ eq 'spec' and next;  # special case
-        $stuff->{_permitted}->{$_} or croak "Unrecognized argument to new: $_ => $args{$_}";
+        exists ($stuff->{_permitted}->{$_}) or croak "Unrecognized argument to new: $_ => $args{$_}";
     }
     my $self = bless($stuff, $class);
     if ($args{spec}) {
-        $self->spec($args{$_}) or croak "Unrecognized spec $args{$_}";
+        $debug and warn "### Setting spec $args{spec}";
+        $self->spec($args{spec}) or croak "Unrecognized spec '$args{spec}'";
     }
+    $debug and print Dumper($self);
     return $self;
 }
 
@@ -144,7 +151,7 @@ sub spec {        # spec(code, nonfatal)
     my $code = shift;
     my @files = $self->get_spec_files($code);
     unless (@files) {
-        $self->error("Unrecognized spec code $code (no csv files)");
+        $self->error("Unrecognized spec code '$code' (no csv files)");
         return;
     }
     $self->{spec_files} = \@files;
@@ -155,7 +162,25 @@ sub get_spec_files {
     my $code = @_ ? shift : $self->spec;
     $code or return carp_error("No EDI spec revision argument to spec_files().  Nothing to look for!");
     my $dir = $self->get_spec_dir or return carp_error("EDI Specifications directory missing");
+    $debug and warn "get_spec_dir returned '$dir'.  Looking for $dir/*.$code.csv";
     return File::Find::Rule->maxdepth(1)->name("*.$code.csv")->file()->in($dir);
+}
+sub get_spec_handle {
+    my $self = shift;
+    my $type = shift || '';
+    my $trio;
+    unless ($type and $trio = $spec_map->{$type}) {
+        return carp_error("Type '$type' is not mapped to a spec file.  Options are: " . join(' ', keys %$spec_map));
+    }
+    my @files = $self->get_spec_files;
+    my $name  = ($self->interactive ? 'I' : 'E') . "$trio." . $self->spec . ".csv";
+    $debug and print STDERR "get_spec_handle() checking " . scalar(@files) . " files for: $name\n";
+    my @hits = grep {(File::Spec->splitpath($_))[2] eq $name} @files;
+    scalar(@hits) or return carp_error("Spec file for $type ($name) not found");
+    my $file = $hits[0];
+    $debug and warn "get_spec_handle opening $file";
+    open(my $fh, "<$file") or carp "get_spec_handle failed to open $file";
+    return $fh;
 }
 
 # Accessor get/set methods
