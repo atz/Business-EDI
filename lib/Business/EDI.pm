@@ -14,6 +14,7 @@ use File::Spec;
 use Business::EDI::CodeList;
 use Business::EDI::Composite;
 use Business::EDI::DataElement;
+use Business::EDI::Spec;
 our $debug = 0;
 
 our $AUTOLOAD;
@@ -70,20 +71,7 @@ sub _deepload {
 }
 
 our $error;          # for the whole class
-our $spec_dir;       # for the whole class
-our $spec_map = {
-    message   => 'DMD',
-    segment   => 'DSD',
-    composite => 'DCD',
-    codelist  => 'DCL',
-    element   => 'DED',
-};
-my %fields = (
-    spec_files   => undef,
-    edi_flavor   => 'edifact',
-    default_spec => 'd08a',
-    interactive  => 0,
-);
+my %fields = ();
 
 # Constructors
 
@@ -93,13 +81,12 @@ sub new {
     my (%args) = @_;
     my $stuff = {_permitted => {(map {$_ => 1} keys %fields)}, %fields};
     foreach (keys %args) {
-        $_ eq 'spec' and next;  # special case
+        $_ eq 'version' and next;  # special case
         exists ($stuff->{_permitted}->{$_}) or croak "Unrecognized argument to new: $_ => $args{$_}";
     }
     my $self = bless($stuff, $class);
-    if ($args{spec}) {
-        $debug and warn "### Setting spec $args{spec}";
-        $self->spec($args{spec}) or croak "Unrecognized spec '$args{spec}'";
+    if ($args{version}) {
+        $self->spec(version => $args{version}) or croak "Unrecognized spec version '$args{version}'";
     }
     $debug and print Dumper($self);
     return $self;
@@ -127,63 +114,13 @@ sub dataelement {
     Business::EDI::DataElement->new(@_);
 }
 
-
-sub get_spec_dir {
-    my $self = shift;
-    $self->{spec_dir} and return $self->{spec_dir};
-    $spec_dir         and return $spec_dir;
-    my $target = 'Business/EDI/data/edifact/untdid';    # path relative to @INC 
-    my @dirs = @INC;
-    foreach (split /\//, $target) {
-        @dirs = File::Find::Rule->maxdepth(1)->name($_)->directory()->in(@dirs);
-    }
-    # we use serial Find's so we don't have to care about OS/filesystem variations.  And we only do it once, typcially.
-    $debug and print STDERR "# spec_dir() found ", scalar(@dirs), " $target dirs:\n# ", join("\n# ", @dirs), "\n";
-    unless (@dirs) {
-        warn "Could not locate specifications directory ($target) in \@INC";
-        return;
-    }
-    return $spec_dir = $dirs[0];
-}
+# Accessor get/set methods
 sub spec {        # spec(code, nonfatal)
     my $self = shift;
-    return $self->{spec} unless @_;
-    my $code = shift;
-    my @files = $self->get_spec_files($code);
-    unless (@files) {
-        $self->error("Unrecognized spec code '$code' (no csv files)");
-        return;
-    }
-    $self->{spec_files} = \@files;
-    return $self->{spec}= $code;
-}
-sub get_spec_files {
-    my $self = shift;
-    my $code = @_ ? shift : $self->spec;
-    $code or return carp_error("No EDI spec revision argument to spec_files().  Nothing to look for!");
-    my $dir = $self->get_spec_dir or return carp_error("EDI Specifications directory missing");
-    $debug and warn "get_spec_dir returned '$dir'.  Looking for $dir/*.$code.csv";
-    return File::Find::Rule->maxdepth(1)->name("*.$code.csv")->file()->in($dir);
-}
-sub get_spec_handle {
-    my $self = shift;
-    my $type = shift || '';
-    my $trio;
-    unless ($type and $trio = $spec_map->{$type}) {
-        return carp_error("Type '$type' is not mapped to a spec file.  Options are: " . join(' ', keys %$spec_map));
-    }
-    my @files = $self->get_spec_files;
-    my $name  = ($self->interactive ? 'I' : 'E') . "$trio." . $self->spec . ".csv";
-    $debug and print STDERR "get_spec_handle() checking " . scalar(@files) . " files for: $name\n";
-    my @hits = grep {(File::Spec->splitpath($_))[2] eq $name} @files;
-    scalar(@hits) or return carp_error("Spec file for $type ($name) not found");
-    my $file = $hits[0];
-    $debug and warn "get_spec_handle opening $file";
-    open(my $fh, "<$file") or carp "get_spec_handle failed to open $file";
-    return $fh;
+    @_ and $self->{spec} = Business::EDI::Spec->new(@_);
+    return $self->{spec};
 }
 
-# Accessor get/set methods
 sub error {
     my ($self, $msg, $quiet) = @_;
     $msg or return $self->{error} || $error;  # just an accessor
@@ -192,7 +129,14 @@ sub error {
 }
 
 sub carp_error {
-    carp shift;
+    my $obj_or_message = shift;
+    my $msg;
+    if (@_) {
+        $msg = (ref($obj_or_message) || $obj_or_message) . ' - ' . shift;
+    } else {
+        $msg = $obj_or_message;
+    }
+    carp $msg;
     return;     # undef: important!
 }
 

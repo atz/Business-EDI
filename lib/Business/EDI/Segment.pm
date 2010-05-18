@@ -14,7 +14,7 @@ our @required_codes = ();
 
 sub new {
     my $class = shift;
-    my $unblessed = $class->SUPER::unblessed(@_);
+    my $unblessed = $class->SUPER::unblessed(shift, \@codes);
     $unblessed or return;
     my $self = bless($unblessed, $class);
     $self->debug($debug);

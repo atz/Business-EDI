@@ -43,6 +43,9 @@ my $pre = "Identical constructors: Business::EDI->codelist and";
 is_deeply($ob1, Business::EDI::CodeList->new_codelist(4343,    $data->{4343}), "$pre Business::EDI::CodeList->new_codelist");
 is_deeply($ob1, Business::EDI::CodeList::ResponseTypeCode->new($data->{4343}), "$pre Business::EDI::CodeList::ResponseTypeCode->new");
 
+my %factors = (
+    message => 3,
+);
 my $spec;
 foreach my $type (qw/message segment composite codelist element/) {
 
