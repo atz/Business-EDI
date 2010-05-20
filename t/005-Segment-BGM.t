@@ -62,10 +62,5 @@ foreach my $key (keys %$data) {
     $verbose and note(ref($msgtype)  . ' dump: ' . Dumper($msgtype));
 }
 
-# ok($slurp = join('', <DATA>),     "Slurped data from DATA handle");
-
-# note("ref(\$obj): " . ref($perl));
-# note("    \$obj : " .     $perl );
-
 note("done");
 

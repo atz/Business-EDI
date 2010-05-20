@@ -16,6 +16,7 @@ use Business::EDI::Composite;
 use Business::EDI::DataElement;
 use Business::EDI::Spec;
 our $debug = 0;
+our %debug = ();
 
 our $AUTOLOAD;
 sub DESTROY {}  #
@@ -94,18 +95,51 @@ sub new {
 
 sub codelist {
     my $self = shift;
-    # Business::EDI::CodeList->require;
+    # my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can create objects";
+    # my $part = $spec->get_spec('message');
     Business::EDI::CodeList->new_codelist(@_);
+}
+
+sub _common_constructor {
+    my $self = shift;
+    my $type = shift or die "Internal error: _common_constructor called without required argument for object type";
+    my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can create $type objects";
+    my $part = $spec->get_spec($type);
+    my $code = uc(shift) or croak "No $type code specified";
+    $part->{$code} or return $self->carp_error("$type code '$code' is not found in spec version " . $spec->version);
+
+    my @subparts = map {$_->{code}} @{$part->{$code}->{parts}};
+    my @compcodes = grep {/^C\d{3}$/} @subparts;
+    my @segcodes  = grep {/^SG\d+$/ } @subparts;
+    if (@compcodes) {
+        my $otherspec = $spec->get_spec('composite');
+        foreach (@compcodes) {
+            push @subparts, map {$_->{code}} @{$otherspec->{$_}->{parts}};
+        }
+    }
+    if (@segcodes) {
+        my $otherspec = $spec->get_spec('segment');
+        foreach (@segcodes) {
+            push @subparts, map {$_->{code}} @{$otherspec->{$_}->{parts}};
+        }
+    }
+    $debug and printf STDERR "creating $type/$code with %d spec subparts: %s\n", scalar(@subparts), join(' ', @subparts);
+    # push @subparts,  'debug';
+    my $unblessed = $self->unblessed(shift, \@subparts);
+    $unblessed or return;
+    my $new = bless($unblessed, __PACKAGE__ . '::' . ucfirst($type));
+    # $new->debug($debug{$type}) if $debug{$type};
+    return $new;
 }
 
 sub segment {
     my $self = shift;
-#    Business::EDI::Segment->new(@_);
+    return $self->_common_constructor('segment', @_);
 }
 
 sub message {
     my $self = shift;
-#    Business::EDI::Message->new(@_);
+    return $self->_common_constructor('message', @_);
 }
 
 sub dataelement {
