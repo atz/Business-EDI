@@ -115,9 +115,13 @@ sub dataelement {
 }
 
 # Accessor get/set methods
-sub spec {        # spec(code, nonfatal)
+sub spec {        # spec(code)
     my $self = shift;
-    @_ and $self->{spec} = Business::EDI::Spec->new(@_);
+    if (@_) {                                               #  Arg(s) mean we are constructing
+        ref($self) or return Business::EDI::Spec->new(@_);  #  Business::EDI->spec(...) style, class method: simple constructor
+        $self->{spec} = Business::EDI::Spec->new(@_);       #  but if we have an object, we retain the new spec
+    }
+    ref($self) or croak "Cannot use class method Business::EDI->spec as an accessor (spec is uninstantiated).  Get an object first like Business::EDI->new->spec";
     return $self->{spec};
 }
 
@@ -237,10 +241,10 @@ sub subelement {
             my $count = scalar(@{$body->{$_}});
             $count == 1 or carp "Repeated section '$_' appears $count times.  Only handling first appearance";  # TODO: fix this
             $new->{repeats}->{$_} = -1;
-            $new->{$_} = $self->subelement($body->{$_}->[0])                 # ELSE, break the ref down (recursively)
+            $new->{$_} = $self->subelement($body->{$_}->[0])                    # ELSE, break the ref down (recursively)
                 or carp "Bad ref ($ref) in body for key $_.  Subelement not created";
         } elsif ($ref) {
-            $new->{$_} = $self->subelement($body->{$_})                 # ELSE, break the ref down (recursively)
+            $new->{$_} = $self->subelement($body->{$_})                         # ELSE, break the ref down (recursively)
                 or carp "Bad ref ($ref) in body for key $_.  Subelement not created";
         } else {
             $new->{$_} = Business::EDI::DataElement->new($_, $body->{$_});      # Otherwise, a terminal (non-ref) data node means it's a DataElement
