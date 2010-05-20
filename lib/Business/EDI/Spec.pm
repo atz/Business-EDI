@@ -49,6 +49,7 @@ sub new {
     }
     my $self = bless($stuff, $class);
     my $version = $args{version} || $self->version || $fields{version} || $self->version_default || $fields{version_default};
+    $version eq 'default' and $version = $self->version_default || $fields{version_default};
     $debug and warn "### Setting version $version";
     $self->set_spec_version($version) or croak "Unrecognized spec version '$version'";
     $debug and print Dumper($self);
