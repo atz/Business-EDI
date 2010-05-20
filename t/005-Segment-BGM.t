@@ -53,10 +53,7 @@ foreach my $key (keys %$data) {
     );
     note "ref(subelement): " . ref($msgtype);
     if ($key eq 'C002') {
-        TODO: {
-            todo_skip "Unimplemented - direct access to unique element grouped under Composite", 1;
-            ok($msgtype->part(1001), "Extra test for direct access to element grouped under C002");
-        }
+        ok($msgtype->part(1001), "Extra test for direct access to element grouped under C002");
     }
     is_deeply($msgtype, $bgm->part($key),        "Different constructor paths, identical object ($key)");
     is($msgtype->code,  $bgm->part($key)->code , "Different constructor paths, same code ($key)");
