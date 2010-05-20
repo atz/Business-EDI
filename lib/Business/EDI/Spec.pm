@@ -16,11 +16,11 @@ our $debug = 0;
 
 our $spec_dir;       # for the whole class
 our $spec_map = {
-    message   => {code => 'DMD', cache => {}, factor => 4},
-    segment   => {code => 'DSD', cache => {}, factor => 4},
-    composite => {code => 'DCD', cache => {}, factor => 4},
-    codelist  => {code => 'DCL', cache => {}, factor => 4},
-    element   => {code => 'DED', cache => {}, factor => 4},
+    message   => {code => 'DMD', cache => {}, keys => [qw/code mandatory repeats    /]},
+    segment   => {code => 'DSD', cache => {}, keys => [qw/pos code mandatory repeats/]},
+    composite => {code => 'DCD', cache => {}, keys => [qw/pos code class def        /]},
+#   codelist  => {code => 'DCL', cache => {}, keys => []},
+    element   => {code => 'DED', cache => {}, },
 };
 
 my %fields = (
@@ -35,8 +35,13 @@ my %fields = (
 
 sub new {
     my $class = shift;
-    scalar(@_) % 2 and croak "Odd number of arguments to new() incorrect.  Use (name1 => value1) style.";
-    my (%args) = @_;
+    my %args;
+    if (scalar(@_) == 1) {
+        $args{version} = shift;
+    } else {
+        scalar(@_) % 2 and croak "Odd number of arguments to new() incorrect.  Use (name1 => value1) style.";
+        %args = @_;
+    }
     my $stuff = {_permitted => {(map {$_ => 1} keys %fields)}, %fields};
     foreach (keys %args) {
         $_ eq 'version' and next;  # special case
@@ -79,6 +84,7 @@ sub set_spec_version {
     $self->{spec_files} = \@files;
     return $self->{version} = $code;
 }
+
 sub find_spec_files {
     my $self = shift;
     my $code = @_ ? shift : ($self->version || $self->version_default);
@@ -87,6 +93,7 @@ sub find_spec_files {
     $debug and warn "get_spec_dir returned '$dir'.  Looking for $dir/*.$code.csv";
     return File::Find::Rule->maxdepth(1)->name("*.$code.csv")->file()->in($dir);
 }
+
 sub get_spec_handle {
     my $self    = shift;
     my $type    = shift || '';
@@ -106,10 +113,12 @@ sub get_spec_handle {
     open (my $fh, "<$file") or carp "get_spec_handle failed to open $file";
     return $fh;
 }
+
 sub csv_filename {
     my $self = shift;
     return ($self->interactive ? 'I' : 'E') . (shift || '') . '.' . (shift || '') . ".csv";
 }
+
 sub get_spec {
     my $self = shift;
     my $type = shift   or return $self->carp_error("get_spec: required argument for spec 'type' missing.  Options are: " . join(', ', keys %$spec_map));
@@ -124,6 +133,7 @@ sub get_spec {
     }
     return $spec_map->{$type}->{cache}->{$version};
 }
+
 sub parse_plexer {
     my $self = shift;
     my $type = shift or croak("parse_plexer: required argument for spec 'type' missing.  Options are: " . join(', ', keys %$spec_map));
@@ -135,6 +145,7 @@ sub parse_plexer {
         # 1000;an..35;B;Document name
         return { 
             map {
+                s/\s*$//;   # kill trailing spaces
                 my @four = split ';', $_;
                 $four[0] => {
                     code  => $four[0],
@@ -144,24 +155,51 @@ sub parse_plexer {
                 }
             } @slurp
        };
-    } elsif ($type eq 'composite') {
-        return;
-
-    } elsif ($type eq 'message') {
-        # DEBMUL:D:07A:UN::;Multiple debit advice message;UNH;M;1;BGM;M;1;DTM;M;1;BUS;C;1;SG1;C;2;SG2;C;5;SG3;C;3;SG4;M;9999;CNT;C;5;SG28;C;5;UNT;M;1
-        # DEBMUL:D:07A:UN::SG1;SG01;RFF;M;1;DTM;C;1
-        return;
-
-    } elsif ($type eq 'segment') {
-        my ($code, @rest) = split ';', $_;
-        my @codeparts = split ':', $code;
-        $code = $codeparts[0];
-        $code .= "_" . $codeparts[-1] if ($codeparts[-1] and $codeparts[-1] ne $code);  # key may include _SegmentGroup
-        $debug and $debug > 1 and print STDERR "parsing CSV for $type/$code\n";
-        my $label = ($type eq 'element') ? pop(@rest) : shift(@rest);
+    } elsif ($type eq 'composite' or $type eq 'message' or $type eq 'segment') {
+        return {
+            map {
+                my ($code, $label, @rest) = split ';', $_;
+                my @codeparts = split ':', $code;
+                $code = $codeparts[0];
+                $code .= "_" . $codeparts[-1] if ($codeparts[-1] and $codeparts[-1] ne $code);  # key may include _SegmentGroup
+                $debug and $debug > 1 and print STDERR "parsing CSV for $type/$code ($label)\n";
+                $code => {
+                    code    => $code,
+                #   version => $codeparts[1] . $codeparts[2],
+                    label   => $label,
+                    parts   => $self->parse_array(\@rest, $spec_map->{$type}->{keys})
+                }
+            } @slurp
+        };
     } else {
         croak "Cannot parse CSV for unknown type '$type'";
     }
+}
+
+# my $foobar = parse_array(\@elements, @keys)
+sub parse_array {
+    my $self = shift;
+    @_ >= 2 or croak "\$self->parse_array needs two array_ref arguments";
+    my @parts = @{(shift)}; # extra parens req'd
+    my @keys  = @{(shift)}; # extra parens req'd
+
+    @keys or croak "No keys passed to parse_array.  Cannot interpret spec line";
+    (scalar(@parts) % scalar(@keys)) and croak sprintf "Cannot parse %s elements evenly into parts of %s for body: %s", scalar(@parts), scalar(@keys), join(';', @parts); 
+
+    my @return;
+    while (@parts) {
+        my %chunk;
+        foreach (@keys) {
+            my $value = shift @parts;
+            if ($_ eq 'mandatory') {
+                next unless $value eq 'M';  # conditional is assumed
+                $value = 1;
+            }
+            $chunk{$_} = $value;
+        }
+        push @return, \%chunk;
+    }
+    return \@return;
 }
 
 sub dump_cache {

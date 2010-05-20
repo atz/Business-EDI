@@ -3,7 +3,8 @@
 
 use strict; use warnings;
 
-use Test::More tests => 19;
+use Data::Dumper;
+use Test::More tests => 32;
 
 BEGIN {
     use_ok('Business::EDI');
@@ -19,18 +20,23 @@ my $data = {
     }
 };
 
-$Business::EDI::debug = 1;
+my $debug = @ARGV ? shift : 0;
+
+$Business::EDI::debug = 
+$Business::EDI::Spec::debug =
+$Data::Dumper::Indent = $debug;
+
 my ($ob1, $edi);
-ok($edi = Business::EDI->new(),               "Business::EDI->new");
-ok($edi = Business::EDI->new(spec => 'd08a'), "Business::EDI->new(spec => 'd08a')");
-my @methods = ('new', 'spec', 'codelist', 'segment', 'get_spec_handle');
+ok($edi = Business::EDI->new(),                  "Business::EDI->new");
+ok($edi = Business::EDI->new(version => 'd08a'), "Business::EDI->new(version => 'd08a')");
+my @methods = ('new', 'spec', 'codelist', 'segment');
 foreach (@methods) {
     can_ok($edi, $_);   # must be real methods, not AUTOLOADed
 }
-is($edi->spec, 'd08a', 'edi->spec()');
-is($edi->interactive, 0, 'edi->interactive');
-ok($edi->spec('d07a'), 'edi->spec("d07a")');
-is($edi->spec, 'd07a', 'edi->spec()');
+is($edi->spec->version, 'd08a', 'edi->spec->version');
+is($edi->spec->interactive,  0, 'edi->spec->interactive');
+ok($edi->spec('d07a'),          'edi->spec("d07a")');
+is($edi->spec->version, 'd07a', 'edi->spec->version');
 # ok(! $edi->spec(spec => 'd08a', 'bad'), 'edi->spec( ODD number of args)');
 
 
@@ -43,20 +49,13 @@ my $pre = "Identical constructors: Business::EDI->codelist and";
 is_deeply($ob1, Business::EDI::CodeList->new_codelist(4343,    $data->{4343}), "$pre Business::EDI::CodeList->new_codelist");
 is_deeply($ob1, Business::EDI::CodeList::ResponseTypeCode->new($data->{4343}), "$pre Business::EDI::CodeList::ResponseTypeCode->new");
 
-my %factors = (
-    message => 3,
-);
-my $spec;
-foreach my $type (qw/message segment composite codelist element/) {
-
-    ok($spec = $edi->get_spec_handle($type), "edi->get_spec_handle('$type')");
-
-# 010;C780;M;1;
-    foreach (<$spec>) {
-        chomp;
-        my ($code, $name, @rest) = split ';', $_;
-        note($_);
-        $code = (split ':', $code)[0];
-        is(scalar(@rest) % 4, 0, "$type/$code has right number of components, a factor of 4 (" . sprintf("%2d", scalar(@rest)) . ")");
-    }
+my ($spec1, $spec2);
+foreach my $type (qw/message segment composite element/) {
+    ok(  $edi->spec->get_spec_handle($type), "edi->get_spec_handle('$type')");
+    ok($spec1 = $edi->spec->get_spec($type), "edi->get_spec('$type')");
+    ok($spec2 = $edi->spec->get_spec($type), "edi->get_spec('$type')");   # 
+    is_deeply($spec1, $spec2, "cached '$type' spec matches first read");  # 
+    # print "$type: ", Dumper($spec1);
 }
+
+$debug and print Dumper($spec1->{9619});
