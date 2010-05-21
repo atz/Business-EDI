@@ -6,18 +6,11 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 our $debug = 0;
 our @codes = (
     'C002',
-    1001,
-    1131,
-    3055,
-    1000,
     'C106',
-    1004,
-    1056,
-    1060,
     1225,
     4343,
 );
@@ -30,11 +23,16 @@ sub new {
         carp "Unblessed object creation failed";
         return;
     }
-    return bless($obj, $class);
+    my $self = bless($obj, $class);
+    $self->spec or $self->spec('default');
+    return $self;
 }
 
 1;
 __END__
+
+
+THIS MODULE IS DEPRECATED.  Use Business::EDI->segment('BGM', $body)
 
 Data comes in looking like, where the hashref is what gets passed to new():
 

@@ -16,7 +16,7 @@ our @codes = (
 #   1154,
 #   1156,
 #   1060,
-    4000,
+#   4000,
 );
 our @required_codes = (1153);
 
@@ -37,6 +37,7 @@ sub new {
         return;
     }
     my $self = bless($obj, $class);
+    $self->spec or $self->spec('default');
     # print "blessed: " , Dumper($self);  use Data::Dumper;
     foreach (@required_codes) {
         unless (defined $obj->part($top)->part($_)) {
@@ -49,3 +50,4 @@ sub new {
 1;
 __END__
 
+THIS MODULE IS DEPRECATED.  Use Business::EDI->segment('RFF', $body)
