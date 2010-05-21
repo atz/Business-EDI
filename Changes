@@ -1,5 +1,14 @@
 Revision history for Business-EDI
 
+0.02    2010-05-21
+        CSV spec files now govern Segment and Composite creation, parsing.
+        Business::EDI::Spec class handles location and parsing of spec CSV files.
+        Business::EDI::Segment::RFF and Business::EDI::Segment::BGM deprecated.
+        Additional tests added.
+        Deeploading (AUTOLOAD through subelements), i.e. collapsible Composites.
+        Data normalization on segment and message constructors.
+
+
 0.01    2010-04-14
         Rudimentary first version, mainly for incoming ORDRSP data.
 
