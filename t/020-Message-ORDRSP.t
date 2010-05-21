@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 754;
+use Test::More tests => 812;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -22,6 +22,10 @@ ok($parser = JSON::XS->new, 'JSON::XS->new');
 $parser->ascii(1);        # output \u escaped strings for any char with a value over 127
 $parser->allow_nonref(1); # allows non-reference values to equate to themselves (see perldoc)
 
+my $debug = $Business::EDI::debug = @ARGV ? shift : 0;
+
+my $edi = Business::EDI->new('d08a') or die "Business::EDI->new('d08a') failed";
+
 sub parse_ordrsp {
     my ($segments) = @_;
     my $type = 'ORDRSP';
@@ -38,7 +42,7 @@ sub parse_ordrsp {
             );
         } elsif ($tag eq 'BGM') {
             my ($bgm, $msgtype, $codelist);
-            print "BGM dump: ", Dumper($segbody);
+            $debug and print "BGM dump: ", Dumper($segbody);
             ok( $bgm = Business::EDI::Segment::BGM->new($segbody), "Business::EDI::Segment::BGM->new");
             ok( $codelist = $bgm->part4343, "Business::EDI::Segment::BGM->new(...)->seg4343->codelist");
             ok( $msgtype = Business::EDI->codelist('ResponseTypeCode', $segbody->{4343}),
@@ -48,8 +52,8 @@ sub parse_ordrsp {
             is($msgtype->value, $bgm->seg4343->value, "Different constructor paths, same value");
             is($msgtype->desc,  $bgm->seg4343->desc,  "Different constructor paths, same description"); 
             my $seg4343 = $bgm->seg4343;
-            print 'ResponseTypeCode dump: ', Dumper($msgtype);
-            print 'bgm->seg4343     dump: ', Dumper($seg4343);
+            $debug and print 'ResponseTypeCode dump: ', Dumper($msgtype);
+            $debug and print 'bgm->seg4343     dump: ', Dumper($seg4343);
             note(sprintf "Business::EDI->codelist('ResponseTypeCode', \$X): $tag/4343 response type: %s - %s (%s)", $msgtype->value, $msgtype->label, $msgtype->desc);
             note(sprintf "Business::EDI::Segment::BGM->new(...)->seg4343\ : $tag/4343 response type: %s - %s (%s)", $seg4343->value, $seg4343->label, $seg4343->desc);
             my $fcn = $bgm->seg1225;
@@ -63,13 +67,12 @@ sub parse_ordrsp {
                 my $body  = $_->[1];
                 $label eq 'RFF' or next;
                 my $obj;
-                ok( $obj = Business::EDI::Segment::RFF->new($body), 
-                    "EDI $tag/$label converts to an object"
-                );
-                ok($obj->partC506->seg1153, "EDI $tag/$label/C506/seg1153 exists");
+                ok($obj = $edi->segment('RFF', $body),   "EDI $tag/$label converts to an object");
+                is_deeply(Business::EDI::Segment::RFF->new($body), $obj, "EDI $tag/$label matching constructors");
+                ok($obj->partC506->seg1153,              "EDI $tag/$label/C506/seg1153 exists");
                 is($obj->partC506->seg1153->value, 'LI', "EDI $tag/$label/C506/seg1153 has value ('LI')") or print Dumper($obj->partC506->seg1153);
-                ok($obj->seg1153, "EDI $tag/$label/seg1153 exists (collapsable Composite)") or print "OBJ: " . Dumper($obj);
-                is($obj->seg1153->value, 'LI', "EDI $tag/$label/seg1153 has value ('LI') (collapsable Composite)") or print Dumper($obj->seg1153);
+                ok($obj->part1153,                       "EDI $tag/$label/part1153 exists (collapsable Composite)") or print "OBJ: " . Dumper($obj);
+                is($obj->part1153->value,          'LI', "EDI $tag/$label/part1153 has value ('LI') (collapsable Composite)") or print Dumper($obj->seg1153);
             }
             push @lins, \@chunks;
         } else {
