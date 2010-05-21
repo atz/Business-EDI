@@ -42,6 +42,15 @@ sub AUTOLOAD {
     }
 }
 
+  # my @segcodes  = grep {/^SG\d+$/ } @subparts;
+  # my @compcodes = grep {/^C\d{3}$/} @subparts;
+  # if (@compcodes) {
+  #     my $otherspec = $spec->get_spec('composite');
+  #     foreach (@compcodes) {
+  #         # push @subparts, map {$_->{code}} @{$otherspec->{$_}->{parts}};
+  #     }
+  # }
+
 sub _deepload {
     my $pkg  = shift; # does nothing
     my $self = shift    or return;
@@ -51,23 +60,31 @@ sub _deepload {
     my @keys = grep {/^C\d{3}$/} keys %{$self->{_permitted}};
     my $ccount = scalar(@keys);
     $debug and warn "Looking for $name under $ccount Composites: " . join(' ', @keys);
-    @keys = grep {
-        $self->{$_}               and
-        $self->{$_}->{_permitted} and
-        $self->{$_}->{$name}
-        } @keys;
-    my $hitcount = scalar(@keys);
-    $debug and warn "Found $name possible in $hitcount Composites: " . join(' ', @keys);
+
+    my @hits;
+    if ($ccount) {
+        my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can autoload objects";
+        my $part = $spec->get_spec('composite');
+        foreach my $code (@keys) {
+            $part->{$code} or croak(ref($self) . " Object _permitted composite code '$code' not found in spec version " . $spec->version);
+            my @subparts = grep {$_->{code} eq $name} @{$part->{$code}->{parts}};
+            @subparts and push(@hits, map {$code} @subparts);   
+            # important here, we add the Cxxx code once per hit in its subparts.  Multiple hits means we cannot target cleanly.
+        }
+    }
+    my $hitcount = scalar(@hits);
+    $debug and warn "Found $name has $hitcount possible matches in $ccount Composites: " . join(' ', @hits);
     if ($hitcount == 1) {
         if (@_) {
-            return $self->{$keys[0]}->{$name} = shift;
+            return $self->{$hits[0]}->{$name} = shift;
         } else {
-            return $self->{$keys[0]}->{$name};
+            return $self->{$hits[0]}->{$name};
         }
     } elsif ($hitcount > 1) {
         croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self) . "', "
             . " $hitcount indeterminate matches in collapsable subelements";
     }
+    $debug and print STDERR "FAILED _deepload of '$name' in object: ", Dumper($self);
     croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self) . "' (or $ccount collapsable subelements)"; 
 }
 
@@ -78,8 +95,13 @@ my %fields = ();
 
 sub new {
     my $class = shift;
-    scalar(@_) % 2 and croak "Odd number of arguments to new() incorrect.  Use (name1 => value1) style.";
-    my (%args) = @_;
+    my %args;
+    if (scalar @_ eq 1) {
+        $args{version} = shift;
+    } elsif (@_) {
+        scalar(@_) % 2 and croak "Odd number of arguments to new() incorrect.  Use (name1 => value1) style.";
+        %args = @_;
+    }
     my $stuff = {_permitted => {(map {$_ => 1} keys %fields)}, %fields};
     foreach (keys %args) {
         $_ eq 'version' and next;  # special case
@@ -107,28 +129,63 @@ sub _common_constructor {
     my $part = $spec->get_spec($type);
     my $code = uc(shift) or croak "No $type code specified";
     $part->{$code} or return $self->carp_error("$type code '$code' is not found in spec version " . $spec->version);
+    my $body = shift;
+    my $normal;
 
+    unless (ref($body)     eq 'HASH') {
+        return $self->carp_error("body argument to unblessed() must be HASHREF, not '" . ref($body) . "'");
+    }
     my @subparts = map {$_->{code}} @{$part->{$code}->{parts}};
+    my @required = map {$_->{code}} grep {$_->{mandatory}} @{$part->{$code}->{parts}};
+
+    my $otherspec;
     my @compcodes = grep {/^C\d{3}$/} @subparts;
-    my @segcodes  = grep {/^SG\d+$/ } @subparts;
     if (@compcodes) {
-        my $otherspec = $spec->get_spec('composite');
-        foreach (@compcodes) {
-            push @subparts, map {$_->{code}} @{$otherspec->{$_}->{parts}};
+        $otherspec = $spec->get_spec('composite');
+    }
+
+    # Now we normalize the body according to the spec (apply wrappers)
+    foreach my $key (keys %$body) {
+        if (grep {$key eq $_} @subparts) {
+            $normal->{$key} = $body->{$key};    # simple case
+            next;
+        }
+        elsif (@compcodes) {
+            my @hits;
+            foreach my $compcode (@compcodes) {
+                push @hits, map {$compcode} grep {$_->{code} eq $key} @{$otherspec->{$compcode}->{parts}};
+            }
+            if (scalar(@hits) == 1) {
+                $normal->{$hits[0]}->{$key} = $body->{$key};    # only one place for it to go, so apply the wrapper
+                next;
+            } elsif (scalar(@hits) > 1) {
+                return $self->carp_error("$type subpart '$key' has " . scalar(@hits)
+                    . " indeterminate matches under composites: " . join(', ', @hits)
+                );
+            }
+            return $self->carp_error("$type subpart '$key' not found in spec " . $spec->version);
         }
     }
-    if (@segcodes) {
-        my $otherspec = $spec->get_spec('segment');
-        foreach (@segcodes) {
-            push @subparts, map {$_->{code}} @{$otherspec->{$_}->{parts}};
-        }
-    }
+
+  # my @segcodes  = grep {/^SG\d+$/ } @subparts;
+  # if (@segcodes) {
+  #     my $otherspec = $spec->get_spec('segment');
+  #     foreach (@segcodes) {
+  #         push @subparts, map {$_->{code}} @{$otherspec->{$_}->{parts}};
+  #     }
+  # }
     $debug and printf STDERR "creating $type/$code with %d spec subparts: %s\n", scalar(@subparts), join(' ', @subparts);
     # push @subparts,  'debug';
-    my $unblessed = $self->unblessed(shift, \@subparts);
+    my $unblessed = $self->unblessed($normal, \@subparts);
     $unblessed or return;
     my $new = bless($unblessed, __PACKAGE__ . '::' . ucfirst($type));
+    $new->spec($spec);
     # $new->debug($debug{$type}) if $debug{$type};
+    foreach (@required) {
+        unless (defined $new->part($_)) {
+            return $self->carp_error("Required field $type/$code/$_ not populated");
+        }
+    }
     return $new;
 }
 
@@ -148,14 +205,26 @@ sub dataelement {
     Business::EDI::DataElement->new(@_);
 }
 
+sub get_spec {
+    my $self = shift;
+    @_ or return carp_error("Missing argument to get_spec()");
+    return Business::EDI::Spec->new(@_);
+}
+
 # Accessor get/set methods
 sub spec {        # spec(code)
     my $self = shift;
-    if (@_) {                                               #  Arg(s) mean we are constructing
-        ref($self) or return Business::EDI::Spec->new(@_);  #  Business::EDI->spec(...) style, class method: simple constructor
-        $self->{spec} = Business::EDI::Spec->new(@_);       #  but if we have an object, we retain the new spec
+    if (@_) {                                        #  Arg(s) mean we are constructing
+        ref($self) or return $self->get_spec(@_);    #  Business::EDI->spec(...) style, class method: simple constructor
+        if (ref($_[0]) eq 'Business::EDI::Spec') {   # TODO: use isa or whatever the hip OO style of role-checking is
+            $self->{spec} = shift;                   #  We got passed a full spec object, just set
+        } else {
+            $self->{spec} = $self->get_spec(@_);     #  otherwise construct and retain
+        }
     }
-    ref($self) or croak "Cannot use class method Business::EDI->spec as an accessor (spec is uninstantiated).  Get an object first like Business::EDI->new->spec";
+    ref($self) or croak "Cannot use class method Business::EDI->spec as an accessor (spec is uninstantiated).  " .
+        "Get a spec'd object first like: Business::EDI->new('d87a')->spec, " .
+        "or specify the version you want: Business::EDI->spec('default') or Business::EDI->get_spec('default')";
     return $self->{spec};
 }
 
@@ -204,15 +273,15 @@ sub unblessed {     # call like Business::EDI->unblessed(\%hash, \@codes);
     return $self;
 }
 
-# similar to autoload, but by argument, does get and set
+# similar to autoload, but by an exact argument, does get and set
 sub part {
     my $self  = shift;
     my $class = ref($self) or croak "part() object method error: $self is not an object";
     my $name  = shift or return;
 
     unless (exists $self->{_permitted}->{$name}) {
-        carp "part() error: Cannot access '$name' field of class '$class'"; 
-        return;     # authoload would have croaked here
+        # first try to reach trhough any Cxxx Composites, if the target is unique
+        return __PACKAGE__->_deepload($self, $name, @_); # not $self->_deepload - avoid recursion
     }
 
     if (@_) {
@@ -265,6 +334,7 @@ sub subelement {
     $codelist_map ||= Business::EDI::CodeList->codemap;
     my $new = {};
     foreach (keys %$body) {
+        $debug and print STDERR "subelement building from key '$_'\n";
         my $ref = ref($body->{$_});
         if ($codelist_map->{$_}) {      # If the key is in the codelist map, it's a codelist
             $new->{$_} = Business::EDI::CodeList->new_codelist($_, $body->{$_});
