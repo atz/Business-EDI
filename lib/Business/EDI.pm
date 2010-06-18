@@ -31,7 +31,7 @@ sub AUTOLOAD {
 
     $debug and warn "AUTOLOADING '$name' for " . $class;
     unless (exists $self->{_permitted}->{$name}) {
-        # first try to reach trhough any Cxxx Composites, if the target is unique
+        # first try to reach through any Cxxx Composites, if the target is unique
         return __PACKAGE__->_deepload($self, $name, @_); # not $self->_deepload - avoid recursion
     }
 
@@ -291,6 +291,12 @@ sub part {
     }
 }
 
+sub part_keys {
+    my $self = shift;
+    return keys %{$self->{_permitted}};
+    # my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can know what parts an $self object might have";
+}
+
 
 # Example data:
 # 'BGM', {
@@ -370,7 +376,8 @@ Business::EDI - Top level class for generating U.N. EDI interchange objects and 
 
   use Business::EDI;
   
-  my $rtc = Business::EDI->codelist('ResponseTypeCode', $json) or die "Unrecognized code!";
+  my $edi = Business::EDI-new('d09b');      # set the EDI spec version
+  my $rtc = $edi->codelist('ResponseTypeCode', $json) or die "Unrecognized code!";
   printf "EDI response type: %s - %s (%s)\n", $rtc->code, $rtc->label, $rtc->value;
 
 =head1 DESCRIPTION

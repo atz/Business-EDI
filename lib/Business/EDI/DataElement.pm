@@ -4,10 +4,14 @@ use strict;
 use warnings;
 
 use UNIVERSAL::require;
+use Business::EDI;
+use base 'Business::EDI';
+
 use vars qw/ %code_hash /;
 our $VERSION = 0.01;
 
 my %codes = ();  # caching
+my @fields = qw(code label value desc);
 
 sub bad_names {   # CLASS method
     return grep {exists $codes{$_} and ! $codes{$_}} keys %codes;   # if it's there, and empty/undef, it's bad
@@ -43,6 +47,8 @@ sub init {
     $self->{code } = $code;
     $self->{label} = $codes->{$code};
     $self->{value} = shift if @_;
+    $self->{desc } = $self->desc($self->{label});
+    $self->{_permitted} = {(map {$_ => 1} @fields)};
     return $self;
 }
 
@@ -78,12 +84,12 @@ sub codelist {
     return $self->{codelist};
 }
 
-sub code  { my $self = shift; @_ and $self->{code } = shift; return $self->{code }; }
-sub label { my $self = shift; @_ and $self->{label} = shift; return $self->{label}; }
-sub value { my $self = shift; @_ and $self->{value} = shift; return $self->{value}; }
+# sub code  { my $self = shift; @_ and $self->{code } = shift; return $self->{code }; }
+# sub label { my $self = shift; @_ and $self->{label} = shift; return $self->{label}; }
+# sub value { my $self = shift; @_ and $self->{value} = shift; return $self->{value}; }
 sub desc {
     my $self = shift;
-    local $_ = $self->label();
+    local $_ = @_ ? shift : $self->label();
     my @humps;
     foreach(/([A-Z][a-z]+)/g) {
         push @humps, lc($_);
@@ -91,6 +97,8 @@ sub desc {
     return ucfirst join ' ', @humps;
 }
 
+# methods in common w/ other EDI objects for recursive functionality
+# sub part_keys {return @fields;}
 
 sub codehash {
     my $self = shift;

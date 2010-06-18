@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 812;
+use Test::More tests => 1276;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -106,7 +106,7 @@ my $foo = ($parser->decode($slurp));
 ok($foo, "decode slurp");
 ok($perl = JSONObject2Perl($foo), "DATA handle read and decode" );
 
-$perl or die "DATA handle not decode successfully";
+$perl or die "DATA handle not decoded successfully";
 # note("ref(\$obj): " . ref($perl));
 # note("    \$obj : " .     $perl );
 
@@ -173,18 +173,24 @@ is(scalar(@rffs),  58, " 58 RFFs found (inside LINs)");
 
 # We want: RFF > C506 > 1154 where 1153 = LI
 foreach my $rff (@rffs) {
-    my $obj = Business::EDI::Segment::RFF->new($rff);
-    ok($obj, 'Business::EDI::Segment::RFF->new()');
+    my $obj = $edi->segment('RFF', $rff);
+    ok($obj, '$edi->segment("RFF", ...)');
     # print Dumper ($obj);
-    foreach my $subrff (keys %$rff) {
-        $subrff eq 'C506' or next;
-        my $i = 0;
-        foreach (sort keys %{$rff->{$subrff}}) {
-            my $x = Business::EDI::DataElement->new($_, $rff->{$subrff}->{$_});
-            # print "$_ ", $x->label, " ", $x->value, " ";
-            # $i++ == 0 and print "==> ";
-            ok($x, "Business::EDI::DataElement->new($_, ...)");
+    $obj->C506() or next;
+    $debug and print "RFF/C506     parts: ", join(", ", $obj->C506->part_keys), "\n";
+    foreach my $key ($obj->C506->part_keys) {
+        my $subrff = $obj->C506->part($key) or next;
+        ok($subrff, "RFF/C506/$key object (via part method)");
+        $debug and note("subrff->code: " . $subrff->code);
+        $debug and print "RFF/C506/$key parts: ", join(", ", $subrff->part_keys), "\n";
+        $debug and print "RFF/C506/$key ", Dumper ($subrff);
+        foreach ($subrff->part_keys) {
+            ok($subrff->part($_), "RFF/C506/$key/$_");
         }
+        # my $x = Business::EDI::DataElement->new($subrff->code, $rff->{$key}->{$subrff->code});
+        # my $x = Business::EDI::DataElement->new($subrff->code, $subrff->part($_));
+        # print "$_ ", $x->label, " ", $x->value, " ";
+        # ok($x, "Business::EDI::DataElement->new(" . $subrff->code() . ", ...)");
     }
 }
 note("done");

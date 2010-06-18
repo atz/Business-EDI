@@ -124,7 +124,8 @@ sub get_spec {
     my $self = shift;
     my $type = shift   or return $self->carp_error("get_spec: required argument for spec 'type' missing.  Options are: " . join(', ', keys %$spec_map));
     $spec_map->{$type} or return $self->carp_error("Type '$type' is not mapped to a spec file.  Options are: " . join(' ', keys %$spec_map));
-    my $version = @_ ? shift : $self->version;
+    my $subpart = @_ ? shift : '';
+    my $version = $self->version;
     $version or return $self->carp_error("spec version is not set (nor passed as a parameter)");
     if ($spec_map->{$type}->{cache}->{$version}) {
         $debug and print STDERR "cache hit for spec_map->{$type}->{cache}->{$version}\n";
