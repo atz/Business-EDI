@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::AttributeFunctionCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9017;
+my $VERSION     = 0.02;
+sub list_number {9017;}
 my $usage       = 'C';
 
 # 9017  Attribute function code qualifier                       [C]

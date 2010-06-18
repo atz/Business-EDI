@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ChargePeriodTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 2155;
+my $VERSION     = 0.02;
+sub list_number {2155;}
 my $usage       = 'I';
 
 # 2155  Charge period type code                                 [I]

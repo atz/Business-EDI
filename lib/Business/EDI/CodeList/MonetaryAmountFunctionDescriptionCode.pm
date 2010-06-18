@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::MonetaryAmountFunctionDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5007;
+my $VERSION     = 0.02;
+sub list_number {5007;}
 my $usage       = 'B';
 
 # 5007  Monetary amount function description code               [B]

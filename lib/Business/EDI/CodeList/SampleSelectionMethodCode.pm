@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::SampleSelectionMethodCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7039;
+my $VERSION     = 0.02;
+sub list_number {7039;}
 my $usage       = 'B';
 
 # 7039  Sample selection method code                            [B]

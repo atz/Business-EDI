@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DataFormatDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 1503;
+my $VERSION     = 0.02;
+sub list_number {1503;}
 my $usage       = 'C';
 
 # 1503  Data format description code                            [C]

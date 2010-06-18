@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::EnactingPartyIdentifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 3301;
+my $VERSION     = 0.02;
+sub list_number {3301;}
 my $usage       = 'B';
 
 # 3301  Enacting party identifier                               [B]

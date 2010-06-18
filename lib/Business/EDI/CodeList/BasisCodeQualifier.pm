@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::BasisCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9045;
+my $VERSION     = 0.02;
+sub list_number {9045;}
 my $usage       = 'B';
 
 # 9045  Basis code qualifier                                    [B]

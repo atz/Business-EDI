@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::EquipmentTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8053;
+my $VERSION     = 0.02;
+sub list_number {8053;}
 my $usage       = 'C';
 
 # 8053  Equipment type code qualifier                           [C]

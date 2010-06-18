@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::AllowanceOrChargeIdentificationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5189;
+my $VERSION     = 0.02;
+sub list_number {5189;}
 my $usage       = 'B';
 
 # *    5189  Allowance or charge identification code                 [B]

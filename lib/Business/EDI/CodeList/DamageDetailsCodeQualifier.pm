@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DamageDetailsCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7493;
+my $VERSION     = 0.02;
+sub list_number {7493;}
 my $usage       = 'B';
 
 # *    7493  Damage details code qualifier                           [B]

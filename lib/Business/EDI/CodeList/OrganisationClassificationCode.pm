@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::OrganisationClassificationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 3079;
+my $VERSION     = 0.02;
+sub list_number {3079;}
 my $usage       = 'B';
 
 # 3079  Organisation classification code                        [B]

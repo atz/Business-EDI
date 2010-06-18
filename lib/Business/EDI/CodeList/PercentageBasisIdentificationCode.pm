@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PercentageBasisIdentificationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5249;
+my $VERSION     = 0.02;
+sub list_number {5249;}
 my $usage       = 'B';
 
 # 5249  Percentage basis identification code                    [B]

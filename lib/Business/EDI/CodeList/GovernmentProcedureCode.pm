@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::GovernmentProcedureCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9353;
+my $VERSION     = 0.02;
+sub list_number {9353;}
 my $usage       = 'B';
 
 # 9353  Government procedure code                               [B]

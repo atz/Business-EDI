@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::MonetaryAmountTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5025;
+my $VERSION     = 0.02;
+sub list_number {5025;}
 my $usage       = 'C';
 
 # 5025  Monetary amount type code qualifier                     [C]

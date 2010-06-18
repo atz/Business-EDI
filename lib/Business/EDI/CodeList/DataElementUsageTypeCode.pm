@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DataElementUsageTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9175;
+my $VERSION     = 0.02;
+sub list_number {9175;}
 my $usage       = 'B';
 
 # 9175  Data element usage type code                            [B]

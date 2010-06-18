@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::MaintenanceOperationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4513;
+my $VERSION     = 0.02;
+sub list_number {4513;}
 my $usage       = 'C';
 
 # 4513  Maintenance operation code                              [C]

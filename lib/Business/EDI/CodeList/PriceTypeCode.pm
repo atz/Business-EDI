@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PriceTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5375;
+my $VERSION     = 0.02;
+sub list_number {5375;}
 my $usage       = 'C';
 
 # 5375  Price type code                                         [C]

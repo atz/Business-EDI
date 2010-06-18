@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PaymentTermsDescriptionIdentifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4277;
+my $VERSION     = 0.02;
+sub list_number {4277;}
 my $usage       = 'B';
 
 # 4277  Payment terms description identifier                    [B]

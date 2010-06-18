@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ProvisoCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4071;
+my $VERSION     = 0.02;
+sub list_number {4071;}
 my $usage       = 'B';
 
 # 4071  Proviso code qualifier                                  [B]

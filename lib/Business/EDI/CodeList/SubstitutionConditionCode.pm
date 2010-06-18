@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::SubstitutionConditionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4457;
+my $VERSION     = 0.02;
+sub list_number {4457;}
 my $usage       = 'B';
 
 # 4457  Substitution condition code                             [B]

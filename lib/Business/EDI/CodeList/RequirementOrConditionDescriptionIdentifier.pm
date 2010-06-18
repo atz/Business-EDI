@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::RequirementOrConditionDescriptionIdentifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7295;
+my $VERSION     = 0.02;
+sub list_number {7295;}
 my $usage       = 'B';
 
 # 7295  Requirement or condition description identifier         [B]

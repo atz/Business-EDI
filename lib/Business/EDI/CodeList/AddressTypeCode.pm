@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::AddressTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 3131;
+my $VERSION     = 0.02;
+sub list_number {3131;}
 my $usage       = 'C';
 
 # 3131  Address type code                                       [C]

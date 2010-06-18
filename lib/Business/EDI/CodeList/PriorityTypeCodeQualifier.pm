@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PriorityTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4035;
+my $VERSION     = 0.02;
+sub list_number {4035;}
 my $usage       = 'B';
 
 # 4035  Priority type code qualifier                            [B]

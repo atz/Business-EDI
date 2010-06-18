@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::SetTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7297;
+my $VERSION     = 0.02;
+sub list_number {7297;}
 my $usage       = 'B';
 
 # 7297  Set type code qualifier                                 [B]

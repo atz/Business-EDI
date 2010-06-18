@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ServiceRequirementCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7273;
+my $VERSION     = 0.02;
+sub list_number {7273;}
 my $usage       = 'C';
 
 # 7273  Service requirement code                                [C]

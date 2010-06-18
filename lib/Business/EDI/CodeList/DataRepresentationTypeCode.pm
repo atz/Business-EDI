@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DataRepresentationTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9169;
+my $VERSION     = 0.02;
+sub list_number {9169;}
 my $usage       = 'B';
 
 # 9169  Data representation type code                           [B]

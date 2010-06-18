@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::RelatedCauseCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9625;
+my $VERSION     = 0.02;
+sub list_number {9625;}
 my $usage       = 'I';
 
 # 9625  Related cause code                                      [I]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ClinicalInformationTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 6415;
+my $VERSION     = 0.02;
+sub list_number {6415;}
 my $usage       = 'B';
 
 # 6415  Clinical information type code qualifier                [B]

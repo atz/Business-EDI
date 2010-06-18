@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::SectorAreaIdentificationCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7293;
+my $VERSION     = 0.02;
+sub list_number {7293;}
 my $usage       = 'B';
 
 # 7293  Sector area identification code qualifier               [B]

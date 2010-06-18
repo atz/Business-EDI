@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DimensionTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 6145;
+my $VERSION     = 0.02;
+sub list_number {6145;}
 my $usage       = 'B';
 
 # 6145  Dimension type code qualifier                           [B]

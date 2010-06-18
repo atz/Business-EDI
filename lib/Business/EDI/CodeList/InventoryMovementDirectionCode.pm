@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::InventoryMovementDirectionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4501;
+my $VERSION     = 0.02;
+sub list_number {4501;}
 my $usage       = 'B';
 
 # 4501  Inventory movement direction code                       [B]

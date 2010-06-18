@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ContractAndCarriageConditionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4065;
+my $VERSION     = 0.02;
+sub list_number {4065;}
 my $usage       = 'B';
 
 # 4065  Contract and carriage condition code                    [B]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::EquipmentSupplierCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8077;
+my $VERSION     = 0.02;
+sub list_number {8077;}
 my $usage       = 'B';
 
 # 8077  Equipment supplier code                                 [B]

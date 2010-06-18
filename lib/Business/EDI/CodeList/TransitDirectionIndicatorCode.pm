@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::TransitDirectionIndicatorCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8101;
+my $VERSION     = 0.02;
+sub list_number {8101;}
 my $usage       = 'B';
 
 # 8101  Transit direction indicator code                        [B]

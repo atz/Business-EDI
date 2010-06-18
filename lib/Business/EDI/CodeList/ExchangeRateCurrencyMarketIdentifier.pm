@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ExchangeRateCurrencyMarketIdentifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 6341;
+my $VERSION     = 0.02;
+sub list_number {6341;}
 my $usage       = 'C';
 
 # 6341  Exchange rate currency market identifier                [C]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::EventTimeReferenceCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 2475;
+my $VERSION     = 0.02;
+sub list_number {2475;}
 my $usage       = 'B';
 
 # 2475  Event time reference code                               [B]

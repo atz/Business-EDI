@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::IntracompanyPaymentIndicatorCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4463;
+my $VERSION     = 0.02;
+sub list_number {4463;}
 my $usage       = 'B';
 
 # 4463  Intra-company payment indicator code                    [B]

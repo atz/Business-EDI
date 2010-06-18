@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PaymentTermsTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4279;
+my $VERSION     = 0.02;
+sub list_number {4279;}
 my $usage       = 'B';
 
 # 4279  Payment terms type code qualifier                       [B]

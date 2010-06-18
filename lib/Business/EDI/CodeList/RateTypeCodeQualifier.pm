@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::RateTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5419;
+my $VERSION     = 0.02;
+sub list_number {5419;}
 my $usage       = 'B';
 
 # 5419  Rate type code qualifier                                [B]

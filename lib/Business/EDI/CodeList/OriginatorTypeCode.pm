@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::OriginatorTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 3457;
+my $VERSION     = 0.02;
+sub list_number {3457;}
 my $usage       = 'I';
 
 # 3457  Originator type code                                    [I]

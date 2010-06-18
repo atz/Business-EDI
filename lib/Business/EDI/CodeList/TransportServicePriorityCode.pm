@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::TransportServicePriorityCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4219;
+my $VERSION     = 0.02;
+sub list_number {4219;}
 my $usage       = 'B';
 
 # 4219  Transport service priority code                         [B]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ItemTypeIdentificationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7143;
+my $VERSION     = 0.02;
+sub list_number {7143;}
 my $usage       = 'C';
 
 # *    7143  Item type identification code                           [C]

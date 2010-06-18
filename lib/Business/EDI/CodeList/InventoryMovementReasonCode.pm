@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::InventoryMovementReasonCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4499;
+my $VERSION     = 0.02;
+sub list_number {4499;}
 my $usage       = 'B';
 
 # 4499  Inventory movement reason code                          [B]

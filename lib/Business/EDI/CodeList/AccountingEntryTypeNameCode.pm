@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::AccountingEntryTypeNameCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4475;
+my $VERSION     = 0.02;
+sub list_number {4475;}
 my $usage       = 'B';
 
 # 4475  Accounting entry type name code                         [B]

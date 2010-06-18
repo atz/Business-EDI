@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::HaulageArrangementsCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8341;
+my $VERSION     = 0.02;
+sub list_number {8341;}
 my $usage       = 'B';
 
 # 8341  Haulage arrangements code                               [B]

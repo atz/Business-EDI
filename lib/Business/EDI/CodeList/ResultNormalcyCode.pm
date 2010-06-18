@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ResultNormalcyCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 6079;
+my $VERSION     = 0.02;
+sub list_number {6079;}
 my $usage       = 'B';
 
 # 6079  Result normalcy code                                    [B]

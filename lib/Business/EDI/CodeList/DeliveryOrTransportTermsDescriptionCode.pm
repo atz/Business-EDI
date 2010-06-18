@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DeliveryOrTransportTermsDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4053;
+my $VERSION     = 0.02;
+sub list_number {4053;}
 my $usage       = 'B';
 
 # 4053  Delivery or transport terms description code            [B]

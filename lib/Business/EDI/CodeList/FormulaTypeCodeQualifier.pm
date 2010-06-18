@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::FormulaTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9501;
+my $VERSION     = 0.02;
+sub list_number {9501;}
 my $usage       = 'B';
 
 # 9501  Formula type code qualifier                             [B]

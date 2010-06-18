@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ControlTotalTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 6069;
+my $VERSION     = 0.02;
+sub list_number {6069;}
 my $usage       = 'B';
 
 # 6069  Control total type code qualifier                       [B]

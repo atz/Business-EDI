@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PercentageTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5245;
+my $VERSION     = 0.02;
+sub list_number {5245;}
 my $usage       = 'B';
 
 # 5245  Percentage type code qualifier                          [B]

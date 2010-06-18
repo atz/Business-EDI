@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PayerResponsibilityLevelCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9645;
+my $VERSION     = 0.02;
+sub list_number {9645;}
 my $usage       = 'I';
 
 # 9645  Payer responsibility level code                         [I]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PeriodTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 2151;
+my $VERSION     = 0.02;
+sub list_number {2151;}
 my $usage       = 'C';
 
 # 2151  Period type code                                        [C]

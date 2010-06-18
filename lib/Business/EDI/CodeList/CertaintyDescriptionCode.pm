@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::CertaintyDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4049;
+my $VERSION     = 0.02;
+sub list_number {4049;}
 my $usage       = 'C';
 
 # 4049  Certainty description code                              [C]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DutyOrTaxOrFeeFunctionCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5283;
+my $VERSION     = 0.02;
+sub list_number {5283;}
 my $usage       = 'B';
 
 # 5283  Duty or tax or fee function code qualifier              [B]

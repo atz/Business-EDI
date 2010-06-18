@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::CommunicationMediumTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 3153;
+my $VERSION     = 0.02;
+sub list_number {3153;}
 my $usage       = 'C';
 
 # 3153  Communication medium type code                          [C]

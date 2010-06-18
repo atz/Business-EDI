@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DischargeTypeDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9447;
+my $VERSION     = 0.02;
+sub list_number {9447;}
 my $usage       = 'C';
 
 # 9447  Discharge type description code                         [C]

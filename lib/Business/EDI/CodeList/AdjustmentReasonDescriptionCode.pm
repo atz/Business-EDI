@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::AdjustmentReasonDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4465;
+my $VERSION     = 0.02;
+sub list_number {4465;}
 my $usage       = 'C';
 
 # 4465  Adjustment reason description code                      [C]

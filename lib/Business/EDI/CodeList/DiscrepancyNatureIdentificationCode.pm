@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DiscrepancyNatureIdentificationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4221;
+my $VERSION     = 0.02;
+sub list_number {4221;}
 my $usage       = 'B';
 
 # 4221  Discrepancy nature identification code                  [B]

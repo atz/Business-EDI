@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::EditMaskRepresentationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9031;
+my $VERSION     = 0.02;
+sub list_number {9031;}
 my $usage       = 'B';
 
 # 9031  Edit mask representation code                           [B]

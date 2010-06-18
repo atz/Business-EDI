@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::TrafficRestrictionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8015;
+my $VERSION     = 0.02;
+sub list_number {8015;}
 my $usage       = 'I';
 
 # 8015  Traffic restriction code                                [I]

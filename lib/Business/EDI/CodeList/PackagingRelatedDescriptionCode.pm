@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PackagingRelatedDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7233;
+my $VERSION     = 0.02;
+sub list_number {7233;}
 my $usage       = 'B';
 
 # 7233  Packaging related description code                      [B]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::MeasurementPurposeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 6311;
+my $VERSION     = 0.02;
+sub list_number {6311;}
 my $usage       = 'B';
 
 # 6311  Measurement purpose code qualifier                      [B]

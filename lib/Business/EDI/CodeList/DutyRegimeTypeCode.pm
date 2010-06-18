@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DutyRegimeTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9213;
+my $VERSION     = 0.02;
+sub list_number {9213;}
 my $usage       = 'B';
 
 # 9213  Duty regime type code                                   [B]

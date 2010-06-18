@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::AddressFormatCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 3477;
+my $VERSION     = 0.02;
+sub list_number {3477;}
 my $usage       = 'C';
 
 # 3477  Address format code                                     [C]

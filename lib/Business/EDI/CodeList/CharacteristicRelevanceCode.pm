@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::CharacteristicRelevanceCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4051;
+my $VERSION     = 0.02;
+sub list_number {4051;}
 my $usage       = 'B';
 
 # 4051  Characteristic relevance code                           [B]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::CreditCoverResponseTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4507;
+my $VERSION     = 0.02;
+sub list_number {4507;}
 my $usage       = 'B';
 
 # 4507  Credit cover response type code                         [B]

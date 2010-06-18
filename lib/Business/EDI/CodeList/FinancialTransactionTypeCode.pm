@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::FinancialTransactionTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4487;
+my $VERSION     = 0.02;
+sub list_number {4487;}
 my $usage       = 'B';
 
 # 4487  Financial transaction type code                         [B]

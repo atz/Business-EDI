@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::SublineItemPriceChangeOperationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5213;
+my $VERSION     = 0.02;
+sub list_number {5213;}
 my $usage       = 'C';
 
 # 5213  Sub-line item price change operation code               [C]

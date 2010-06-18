@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DutyOrTaxOrFeeRateBasisCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5273;
+my $VERSION     = 0.02;
+sub list_number {5273;}
 my $usage       = 'B';
 
 # 5273  Duty or tax or fee rate basis code                      [B]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::FormulaSequenceCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9507;
+my $VERSION     = 0.02;
+sub list_number {9507;}
 my $usage       = 'B';
 
 # 9507  Formula sequence code qualifier                         [B]

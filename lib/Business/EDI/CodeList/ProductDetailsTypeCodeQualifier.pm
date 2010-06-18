@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ProductDetailsTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7133;
+my $VERSION     = 0.02;
+sub list_number {7133;}
 my $usage       = 'I';
 
 # 7133  Product details type code qualifier                     [I]

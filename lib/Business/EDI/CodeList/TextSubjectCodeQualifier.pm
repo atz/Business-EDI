@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::TextSubjectCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4451;
+my $VERSION     = 0.02;
+sub list_number {4451;}
 my $usage       = 'C';
 
 # 4451  Text subject code qualifier                             [C]

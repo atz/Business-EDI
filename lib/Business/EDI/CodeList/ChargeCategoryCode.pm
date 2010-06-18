@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ChargeCategoryCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5237;
+my $VERSION     = 0.02;
+sub list_number {5237;}
 my $usage       = 'B';
 
 # 5237  Charge category code                                    [B]

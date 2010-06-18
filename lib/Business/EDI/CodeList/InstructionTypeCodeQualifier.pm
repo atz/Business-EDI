@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::InstructionTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4403;
+my $VERSION     = 0.02;
+sub list_number {4403;}
 my $usage       = 'C';
 
 # 4403  Instruction type code qualifier                         [C]

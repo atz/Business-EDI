@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::NameTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 3403;
+my $VERSION     = 0.02;
+sub list_number {3403;}
 my $usage       = 'B';
 
 # 3403  Name type code                                          [B]

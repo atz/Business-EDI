@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::TransportMeansOwnershipIndicatorCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8281;
+my $VERSION     = 0.02;
+sub list_number {8281;}
 my $usage       = 'B';
 
 # 8281  Transport means ownership indicator code                [B]

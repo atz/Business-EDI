@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::AttendeeCategoryDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7459;
+my $VERSION     = 0.02;
+sub list_number {7459;}
 my $usage       = 'B';
 
 # 7459  Attendee category description code                      [B]

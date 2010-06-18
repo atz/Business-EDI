@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ProductGroupTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5379;
+my $VERSION     = 0.02;
+sub list_number {5379;}
 my $usage       = 'B';
 
 # 5379  Product group type code                                 [B]

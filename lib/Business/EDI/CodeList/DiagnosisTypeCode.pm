@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DiagnosisTypeCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9623;
+my $VERSION     = 0.02;
+sub list_number {9623;}
 my $usage       = 'I';
 
 # 9623  Diagnosis type code                                     [I]

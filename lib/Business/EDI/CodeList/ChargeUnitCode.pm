@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ChargeUnitCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5261;
+my $VERSION     = 0.02;
+sub list_number {5261;}
 my $usage       = 'I';
 
 # 5261  Charge unit code                                        [I]

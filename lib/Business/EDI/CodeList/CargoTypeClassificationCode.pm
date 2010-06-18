@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::CargoTypeClassificationCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7085;
+my $VERSION     = 0.02;
+sub list_number {7085;}
 my $usage       = 'B';
 
 # 7085  Cargo type classification code                          [B]

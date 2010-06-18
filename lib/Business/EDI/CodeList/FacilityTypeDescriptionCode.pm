@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::FacilityTypeDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9039;
+my $VERSION     = 0.02;
+sub list_number {9039;}
 my $usage       = 'I';
 
 # 9039  Facility type description code                          [I]

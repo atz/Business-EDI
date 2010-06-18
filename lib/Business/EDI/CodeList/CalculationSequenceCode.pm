@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::CalculationSequenceCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 1227;
+my $VERSION     = 0.02;
+sub list_number {1227;}
 my $usage       = 'B';
 
 # 1227  Calculation sequence code                               [B]

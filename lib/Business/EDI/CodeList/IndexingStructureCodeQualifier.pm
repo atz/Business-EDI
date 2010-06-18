@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::IndexingStructureCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7429;
+my $VERSION     = 0.02;
+sub list_number {7429;}
 my $usage       = 'B';
 
 # 7429  Indexing structure code qualifier                       [B]

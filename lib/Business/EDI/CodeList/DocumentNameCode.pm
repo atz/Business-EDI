@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DocumentNameCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 1001;
+my $VERSION     = 0.02;
+sub list_number {1001;}
 my $usage       = 'C';
 
 # *    1001  Document name code                                      [C]

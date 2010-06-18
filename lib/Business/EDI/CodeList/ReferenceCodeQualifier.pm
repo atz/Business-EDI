@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ReferenceCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 1153;
+my $VERSION     = 0.02;
+sub list_number {1153;}
 my $usage       = 'C';
 
 # *    1153  Reference code qualifier                                [C]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::MembershipCategoryDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7451;
+my $VERSION     = 0.02;
+sub list_number {7451;}
 my $usage       = 'B';
 
 # 7451  Membership category description code                    [B]

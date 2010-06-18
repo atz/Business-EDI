@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ComputerEnvironmentDetailsCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 1501;
+my $VERSION     = 0.02;
+sub list_number {1501;}
 my $usage       = 'B';
 
 # 1501  Computer environment details code qualifier             [B]

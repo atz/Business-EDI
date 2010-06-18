@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::SizeTypeCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 6173;
+my $VERSION     = 0.02;
+sub list_number {6173;}
 my $usage       = 'B';
 
 # 6173  Size type code qualifier                                [B]

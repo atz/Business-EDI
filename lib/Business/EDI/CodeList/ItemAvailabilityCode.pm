@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ItemAvailabilityCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7011;
+my $VERSION     = 0.02;
+sub list_number {7011;}
 my $usage       = 'B';
 
 # 7011  Item availability code                                  [B]

@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::RequirementDesignatorCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 7299;
+my $VERSION     = 0.02;
+sub list_number {7299;}
 my $usage       = 'C';
 
 # 7299  Requirement designator code                             [C]

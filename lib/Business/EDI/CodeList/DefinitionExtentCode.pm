@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DefinitionExtentCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9025;
+my $VERSION     = 0.02;
+sub list_number {9025;}
 my $usage       = 'B';
 
 # 9025  Definition extent code                                  [B]

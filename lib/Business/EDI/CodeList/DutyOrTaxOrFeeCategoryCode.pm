@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::DutyOrTaxOrFeeCategoryCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 5305;
+my $VERSION     = 0.02;
+sub list_number {5305;}
 my $usage       = 'B';
 
 # 5305  Duty or tax or fee category code                        [B]

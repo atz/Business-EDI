@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::MessageFunctionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 1225;
+my $VERSION     = 0.02;
+sub list_number {1225;}
 my $usage       = 'C';
 
 # 1225  Message function code                                   [C]

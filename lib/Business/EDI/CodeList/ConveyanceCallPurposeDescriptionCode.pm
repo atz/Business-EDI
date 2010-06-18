@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::ConveyanceCallPurposeDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8025;
+my $VERSION     = 0.02;
+sub list_number {8025;}
 my $usage       = 'B';
 
 # 8025  Conveyance call purpose description code                [B]

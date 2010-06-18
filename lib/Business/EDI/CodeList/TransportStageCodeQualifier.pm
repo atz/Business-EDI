@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::TransportStageCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8051;
+my $VERSION     = 0.02;
+sub list_number {8051;}
 my $usage       = 'B';
 
 # 8051  Transport stage code qualifier                          [B]

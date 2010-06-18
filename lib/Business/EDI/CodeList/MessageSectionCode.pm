@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::MessageSectionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 1049;
+my $VERSION     = 0.02;
+sub list_number {1049;}
 my $usage       = 'B';
 
 # 1049  Message section code                                    [B]

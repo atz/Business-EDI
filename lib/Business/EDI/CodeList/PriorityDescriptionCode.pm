@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::PriorityDescriptionCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 4037;
+my $VERSION     = 0.02;
+sub list_number {4037;}
 my $usage       = 'B';
 
 # 4037  Priority description code                               [B]

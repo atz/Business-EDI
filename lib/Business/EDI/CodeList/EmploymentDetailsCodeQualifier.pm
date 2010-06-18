@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::EmploymentDetailsCodeQualifier;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 9003;
+my $VERSION     = 0.02;
+sub list_number {9003;}
 my $usage       = 'B';
 
 # 9003  Employment details code qualifier                       [B]

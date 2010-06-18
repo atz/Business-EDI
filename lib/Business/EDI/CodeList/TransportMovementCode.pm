@@ -1,8 +1,8 @@
 package Business::EDI::CodeList::TransportMovementCode;
 
 use base 'Business::EDI::CodeList';
-my $VERSION     = 0.01;
-my $list_number = 8323;
+my $VERSION     = 0.02;
+sub list_number {8323;}
 my $usage       = 'B';
 
 # 8323  Transport movement code                                 [B]
