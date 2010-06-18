@@ -17,6 +17,7 @@ do have a defined list of legal values.
 our $VERSION = 0.01;
 our $verbose = 0;
 our %codemap;
+my @fields = qw/ code value label desc /;
 
 sub new_codelist {      # constructor: NOT to be overridden, first argument is string name like 'ResponseTypeCode'
     my $class = shift;  # note: we don't return objects of this class, we return an object from the subclasses
@@ -59,7 +60,8 @@ sub init {
     my $codes = $self->get_codes();    # from subobject
     $verbose and warn ref($self) . "->get_codes got " . scalar(keys %$codes) . ", setting value '$value'";
     $self->{value} = $value;
-    $self->{listnumber} = shift if @_;
+    $self->{code } = @_ ? shift : $self->list_number;
+    $self->{_permitted} = {(map {$_ => 1} @fields)};
     unless (length($value) and $codes->{$value}) {
         $verbose and carp "Value '$value' is not an authorized value";
         $self->{label} = '';
@@ -80,10 +82,10 @@ sub init {
 # }
 
 sub code       { my $self = shift; return $self->listnumber(@_); }
-sub listnumber { my $self = shift; @_ and $self->{listnumber} = shift; return $self->{listnumber}; }
-sub label      { my $self = shift; @_ and $self->{label}      = shift; return $self->{label};      }
-sub desc       { my $self = shift; @_ and $self->{desc }      = shift; return $self->{desc };      }
-sub value      { my $self = shift; @_ and $self->{value}      = shift; return $self->{value};      }
+sub listnumber { my $self = shift; @_ and $self->{code } = shift; return $self->{code }; }
+sub label      { my $self = shift; @_ and $self->{label} = shift; return $self->{label}; }
+sub desc       { my $self = shift; @_ and $self->{desc } = shift; return $self->{desc }; }
+sub value      { my $self = shift; @_ and $self->{value} = shift; return $self->{value}; }
 
 sub name2number {
     my $self = shift;
