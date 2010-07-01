@@ -47,7 +47,7 @@ sub new {       # override me if you want,
     # $code or return;
     my $self = bless({}, $class);
     unless ($self->init($code, @_)) {
-        carp $class . "->init failed for code '" . (defined($code) ? $code : '') . "'";
+        carp $class . "->init('" . (defined($code) ? $code : '') . "', " . join(", ",@_), ") FAILED\n";
         return;
     }
     return $self;
@@ -107,7 +107,7 @@ sub codemap {
         1159 => "SequenceIdentifierSourceCode",
         1225 => "MessageFunctionCode",
         1227 => "CalculationSequenceCode",
-        1229 => "ActionRequest/notificationDescriptionCode",
+        1229 => "ActionRequestNotificationDescriptionCode",
         1373 => "DocumentStatusCode",
         1501 => "ComputerEnvironmentDetailsCodeQualifier",
         1503 => "DataFormatDescriptionCode",
