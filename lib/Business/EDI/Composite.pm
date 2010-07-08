@@ -5,10 +5,189 @@ use base 'Business::EDI';
 use strict; use warnings;
 use Carp;
 
-my $VERSION = 0.02;
+my $VERSION = 0.03;
 my $debug;
 
 my $guts = {
+
+# These are from the EDI SYNTAX specs
+'S001' => { label => 'SYNTAX IDENTIFIER', desc => 'SYNTAX IDENTIFIER', parts => {
+    '0001' => { pos => '010', def =>      'a4' },
+    '0002' => { pos => '020', def =>     'an1' },
+    '0080' => { pos => '030', def =>   'an..6' },
+    '0133' => { pos => '040', def =>   'an..3' },
+    '0076' => { pos => '050', def =>     'an2' },
+}},
+'S002' => { label => 'INTERCHANGE SENDER', desc => 'INTERCHANGE SENDER', parts => {
+    '0004' => { pos => '010', def =>  'an..35' },
+    '0007' => { pos => '020', def =>   'an..4' },
+    '0008' => { pos => '030', def =>  'an..35' },
+    '0042' => { pos => '040', def =>  'an..35' },
+}},
+'S003' => { label => 'INTERCHANGE RECIPIENT', desc => 'INTERCHANGE RECIPIENT', parts => {
+    '0010' => { pos => '010', def =>  'an..35' },
+    '0007' => { pos => '020', def =>   'an..4' },
+    '0014' => { pos => '030', def =>  'an..35' },
+    '0046' => { pos => '040', def =>  'an..35' },
+}},
+'S004' => { label => 'DATE AND TIME OF PREPARATION', desc => 'DATE AND TIME OF PREPARATION', parts => {
+    '0017' => { pos => '010', def =>      'n8' },
+    '0019' => { pos => '020', def =>      'n4' },
+}},
+'S005' => { label => 'RECIPIENT REFERENCE/PASSWORD DETAILS', desc => 'RECIPIENT REFERENCE/PASSWORD DETAILS', parts => {
+    '0022' => { pos => '010', def =>  'an..14' },
+    '0025' => { pos => '020', def =>     'an2' },
+}},
+'S006' => { label => 'APPLICATION SENDER IDENTIFICATION', desc => 'APPLICATION SENDER IDENTIFICATION', parts => {
+    '0040' => { pos => '010', def =>  'an..35' },
+    '0007' => { pos => '020', def =>   'an..4' },
+}},
+'S007' => { label => 'APPLICATION RECIPIENT IDENTIFICATION', desc => 'APPLICATION RECIPIENT IDENTIFICATION', parts => {
+    '0044' => { pos => '010', def =>  'an..35' },
+    '0007' => { pos => '020', def =>   'an..4' },
+}},
+'S008' => { label => 'MESSAGE VERSION', desc => 'MESSAGE VERSION', parts => {
+    '0052' => { pos => '010', def =>   'an..3' },
+    '0054' => { pos => '020', def =>   'an..3' },
+    '0057' => { pos => '030', def =>   'an..6' },
+}},
+'S009' => { label => 'MESSAGE IDENTIFIER', desc => 'MESSAGE IDENTIFIER', parts => {
+    '0065' => { pos => '010', def =>   'an..6' },
+    '0052' => { pos => '020', def =>   'an..3' },
+    '0054' => { pos => '030', def =>   'an..3' },
+    '0051' => { pos => '040', def =>   'an..3' },
+    '0057' => { pos => '050', def =>   'an..6' },
+    '0110' => { pos => '060', def =>   'an..6' },
+    '0113' => { pos => '070', def =>   'an..6' },
+}},
+'S010' => { label => 'STATUS OF THE TRANSFER', desc => 'STATUS OF THE TRANSFER', parts => {
+    '0070' => { pos => '010', def =>    'n..2' },
+    '0073' => { pos => '020', def =>      'a1' },
+}},
+'S011' => { label => 'DATA ELEMENT IDENTIFICATION', desc => 'DATA ELEMENT IDENTIFICATION', parts => {
+    '0098' => { pos => '010', def =>    'n..3' },
+    '0104' => { pos => '020', def =>    'n..3' },
+    '0136' => { pos => '030', def =>    'n..6' },
+}},
+'S016' => { label => 'MESSAGE SUBSET IDENTIFICATION', desc => 'MESSAGE SUBSET IDENTIFICATION', parts => {
+    '0115' => { pos => '010', def =>  'an..14' },
+    '0116' => { pos => '020', def =>   'an..3' },
+    '0118' => { pos => '030', def =>   'an..3' },
+    '0051' => { pos => '040', def =>   'an..3' },
+}},
+'S017' => { label => 'MESSAGE IMPLEMENTATION GUIDELINE IDENTIFICATION', desc => 'MESSAGE IMPLEMENTATION GUIDELINE IDENTIFICATION', parts => {
+    '0121' => { pos => '010', def =>  'an..14' },
+    '0122' => { pos => '020', def =>   'an..3' },
+    '0124' => { pos => '030', def =>   'an..3' },
+    '0051' => { pos => '040', def =>   'an..3' },
+}},
+'S018' => { label => 'SCENARIO IDENTIFICATION', desc => 'SCENARIO IDENTIFICATION', parts => {
+    '0127' => { pos => '010', def =>  'an..14' },
+    '0128' => { pos => '020', def =>   'an..3' },
+    '0130' => { pos => '030', def =>   'an..3' },
+    '0051' => { pos => '040', def =>   'an..3' },
+}},
+'S020' => { label => 'REFERENCE IDENTIFICATION', desc => 'REFERENCE IDENTIFICATION', parts => {
+    '0813' => { pos => '010', def =>   'an..3' },
+    '0802' => { pos => '020', def =>  'an..35' },
+}},
+'S021' => { label => 'OBJECT TYPE IDENTIFICATION', desc => 'OBJECT TYPE IDENTIFICATION', parts => {
+    '0805' => { pos => '010', def =>   'an..3' },
+    '0809' => { pos => '020', def => 'an..256' },
+    '0808' => { pos => '030', def => 'an..256' },
+    '0051' => { pos => '040', def =>   'an..3' },
+}},
+'S022' => { label => 'STATUS OF THE OBJECT', desc => 'STATUS OF THE OBJECT', parts => {
+    '0810' => { pos => '010', def =>   'n..18' },
+    '0814' => { pos => '020', def =>    'n..3' },
+    '0070' => { pos => '030', def =>    'n..2' },
+    '0073' => { pos => '040', def =>      'a1' },
+}},
+'S300' => { label => 'DATE AND/OR TIME OF INITIATION', desc => 'DATE AND/OR TIME OF INITIATION', parts => {
+    '0338' => { pos => '010', def =>    'n..8' },
+    '0314' => { pos => '020', def =>  'an..15' },
+    '0336' => { pos => '030', def =>      'n4' },
+}},
+'S301' => { label => 'STATUS OF TRANSFER - INTERACTIVE', desc => 'STATUS OF TRANSFER - INTERACTIVE', parts => {
+    '0320' => { pos => '010', def =>    'n..6' },
+    '0323' => { pos => '020', def =>      'a1' },
+    '0325' => { pos => '030', def =>      'a1' },
+}},
+'S302' => { label => 'DIALOGUE REFERENCE', desc => 'DIALOGUE REFERENCE', parts => {
+    '0300' => { pos => '010', def =>  'an..35' },
+    '0303' => { pos => '020', def =>  'an..35' },
+    '0051' => { pos => '030', def =>   'an..3' },
+    '0304' => { pos => '040', def =>  'an..35' },
+}},
+'S303' => { label => 'TRANSACTION REFERENCE', desc => 'TRANSACTION REFERENCE', parts => {
+    '0306' => { pos => '010', def =>  'an..35' },
+    '0303' => { pos => '020', def =>  'an..35' },
+    '0051' => { pos => '030', def =>   'an..3' },
+}},
+'S305' => { label => 'DIALOGUE IDENTIFICATION', desc => 'DIALOGUE IDENTIFICATION', parts => {
+    '0311' => { pos => '010', def =>  'an..14' },
+    '0342' => { pos => '020', def =>   'an..3' },
+    '0344' => { pos => '030', def =>   'an..3' },
+    '0051' => { pos => '040', def =>   'an..3' },
+}},
+'S306' => { label => 'INTERACTIVE MESSAGE IDENTIFIER', desc => 'INTERACTIVE MESSAGE IDENTIFIER', parts => {
+    '0065' => { pos => '010', def =>   'an..6' },
+    '0052' => { pos => '020', def =>   'an..3' },
+    '0054' => { pos => '030', def =>   'an..3' },
+    '0113' => { pos => '040', def =>   'an..6' },
+    '0051' => { pos => '050', def =>   'an..3' },
+    '0057' => { pos => '060', def =>   'an..6' },
+}},
+'S307' => { label => 'STATUS INFORMATION', desc => 'STATUS INFORMATION', parts => {
+    '0333' => { pos => '010', def =>   'an..3' },
+    '0332' => { pos => '020', def =>  'an..70' },
+    '0335' => { pos => '030', def =>   'an..3' },
+}},
+'S500' => { label => 'SECURITY IDENTIFICATION DETAILS', desc => 'SECURITY IDENTIFICATION DETAILS', parts => {
+    '0577' => { pos => '010', def =>   'an..3' },
+    '0538' => { pos => '020', def =>  'an..35' },
+    '0511' => { pos => '030', def => 'an..1024' },
+    '0513' => { pos => '040', def =>   'an..3' },
+    '0515' => { pos => '050', def =>   'an..3' },
+    '0586' => { pos => '060', def =>  'an..35' },
+    '0586' => { pos => '070', def =>  'an..35' },
+    '0586' => { pos => '080', def =>  'an..35' },
+}},
+'S501' => { label => 'SECURITY DATE AND TIME', desc => 'SECURITY DATE AND TIME', parts => {
+    '0517' => { pos => '010', def =>   'an..3' },
+    '0338' => { pos => '020', def =>    'n..8' },
+    '0314' => { pos => '030', def =>  'an..15' },
+    '0336' => { pos => '040', def =>      'n4' },
+}},
+'S502' => { label => 'SECURITY ALGORITHM', desc => 'SECURITY ALGORITHM', parts => {
+    '0523' => { pos => '010', def =>   'an..3' },
+    '0525' => { pos => '020', def =>   'an..3' },
+    '0533' => { pos => '030', def =>   'an..3' },
+    '0527' => { pos => '040', def =>   'an..3' },
+    '0529' => { pos => '050', def =>   'an..3' },
+    '0591' => { pos => '060', def =>   'an..3' },
+    '0601' => { pos => '070', def =>   'an..3' },
+}},
+'S503' => { label => 'ALGORITHM PARAMETER', desc => 'ALGORITHM PARAMETER', parts => {
+    '0531' => { pos => '010', def =>   'an..3' },
+    '0554' => { pos => '020', def => 'an..512' },
+}},
+'S504' => { label => 'LIST PARAMETER', desc => 'LIST PARAMETER', parts => {
+    '0575' => { pos => '010', def =>   'an..3' },
+    '0558' => { pos => '020', def =>  'an..70' },
+}},
+'S505' => { label => 'SERVICE CHARACTER FOR SIGNATURE', desc => 'SERVICE CHARACTER FOR SIGNATURE', parts => {
+    '0551' => { pos => '010', def =>   'an..3' },
+    '0548' => { pos => '020', def =>   'an..4' },
+}},
+'S508' => { label => 'VALIDATION RESULT', desc => 'VALIDATION RESULT', parts => {
+    '0563' => { pos => '010', def =>   'an..3' },
+    '0560' => { pos => '020', def => 'an..1024' },
+}},
+
+
+# The rest are from regular EDI specs
+
 'C001' => { label => 'TRANSPORT MEANS', desc => 'Code and/or name identifying the type of means of transport.', parts =>{
     8179 => { pos => '010', def => 'an..8' , },
     1131 => { pos => '020', def => 'an..17', },
