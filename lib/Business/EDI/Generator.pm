@@ -49,7 +49,7 @@ sub quotify {
 
 sub safename {
     my $string = shift; 
-    $string =~ s/-//;
+    $string =~ s/[^A-z0-9]//;   # no weird charaters (e.g. punctuation) in filenames
     return $string;
 }
 
