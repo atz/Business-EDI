@@ -54,14 +54,14 @@ sub new {
         exists ($stuff->{_permitted}->{$_}) or croak "Unrecognized argument to new: $_ => $args{$_}";
     }
     my $self = bless($stuff, $class);
-    my $version = $args{version} || $self->version || $fields{version} || $self->version_default || $fields{version_default};
-    my $syntax  = $args{syntax } || $self->syntax  || $fields{syntax } || $self->syntax_default  || $fields{ syntax_default};
-    lc($version) eq 'default' and $version = $self->version_default || $fields{version_default};
-    lc($syntax ) eq 'default' and $syntax  = $self->syntax_default  || $fields{ syntax_default};
+    my $version = lc($args{version} || $self->version || $fields{version} || $self->version_default || $fields{version_default});
+    my $syntax  = lc($args{syntax } || $self->syntax  || $fields{syntax } || $self->syntax_default  || $fields{ syntax_default});
+    $version eq 'default' and $version = $self->version_default || $fields{version_default};
+    $syntax  eq 'default' and $syntax  = $self->syntax_default  || $fields{ syntax_default};
     $debug and warn "### Setting syntax/version $syntax/$version";
     $self->set_syntax_version($syntax) or croak "Unrecognized spec syntax '$syntax'";
     $self->set_spec_version( $version) or croak "Unrecognized spec version '$version'";
-    $debug and print Dumper($self);
+    $debug and $debug > 1 and print Dumper($self);
     return $self;
 }
 
@@ -188,6 +188,12 @@ sub csv_filename {
         . (shift || '') . '.' . (shift || '') . ".csv";
 }
 
+# alias for get_spec
+sub spec_page {
+    my $self = shift;
+    return $self->get_spec(@_);
+}
+
 # gets a page of the already declared spec, like say the one defining message(s)
 sub get_spec {
     my $self = shift;
@@ -302,6 +308,9 @@ sub parse_array {
     return \@return;
 }
 
+
+# Cache Control
+
 sub dump_cache {
     return Dumper($spec_map);
 }
@@ -309,6 +318,154 @@ sub clear_cache {
     foreach (keys %$spec_map) {
         $spec_map->{$_}->{cache} = {};
     }
+}
+
+
+# Specialized sort functions
+
+sub spec_version_sort {
+    my $whatever = shift;
+    my ($a, $b) = @_;
+    my ($a_num, $b_num);
+    if ($a =~ /^.((\d)\d).$/) {
+        $a_num = $1;
+        $a_num += 100 if $2 != 9;   # 2-digit year like 06 (or 12) has to sort as greater than 97
+        if ($b =~ /^.((\d)\d).$/) {
+            $b_num = $1;
+            $b_num += 100 if $2 != 9;   # 2-digit year like 06 (or 12) has to sort as greater than 97
+            return $a_num <=> $b_num || $a cmp $b;
+        }
+    }
+    return $a cmp $b;
+}
+
+sub sg_sort {
+    my $whatever = shift;
+    my ($a, $b) = @_;
+    my ($a_part, $a_num);
+    if ($a =~ /^(.+)\/SG(\d+)$/) {
+        $a_part = $1;
+        $a_num  = $2;
+        if ($b =~ /^(.+)\/SG(\d+)$/) {
+            return $a_part cmp $1 || $a_num <=> $2;
+        } elsif ($b =~ /SG(\d+)$/) {
+            return $a_num <=> $1;
+        }
+    }
+    if ($a =~ /SG(\d+)$/ and 
+        $a_num = $1      and
+        $b =~ /SG(\d+)$/     ) {
+        return $a_num <=> $1;
+    }
+    return $a cmp $b;
+}
+
+
+# Meta-mapping
+# This will need to be updated (or at least reviewed) with each new spec CSV file added
+#
+# Key pseudo-ranges should NOT overlap
+# Many of these have ancillary counterparts as subunits of other SGs,
+# but this mapping is for the TOP level SGs that apply to the whole message.  
+#
+# Note: data representation might be slimmed by specifying just:
+#   first version where introduced, first value and a list of versions where SG is incremented
+#      or
+#   different kind of list of new SGs per version, increments needed calculated on the fly 
+
+my $metamap = {
+    ORDRSP => {
+        # not in 1901..1902 !!
+        line_detail => {
+            '1911..d94b' => "SG25",
+            'd95a..d05b' => "SG26",
+            'd06a..'     => "SG27",
+        },
+        party => {
+            '1911..d94b' => "SG2",
+            'd95a..'     => "SG3",
+        },
+        currency => {
+            '1911..d94b' => "SG7",
+            'd95a..'     => "SG8",
+        },
+        payment_terms => {
+            '1911..d94b' => "SG8",
+            'd95a..'     => "SG9",
+        },
+        transport => {
+            '1911..d94b' => "SG9",
+            'd95a..'     => "SG10",
+        },
+        delivery_terms => {
+            '1911..d94b' => "SG11",
+            'd95a..'     => "SG12",
+        },
+        delivery_schedule => {
+            '1911..d94b' => "SG15",
+            'd95a..'     => "SG16",
+        },
+        packaging => {
+            '1911..d94b' => "SG12",
+            'd95a..'     => "SG13",
+        },
+        mark_label => {
+            '1911..d94b' => "SG13",
+            'd95a..'     => "SG14",
+        },
+        handling => {
+            '1911..d94b' => "SG14",
+            'd95a..'     => "SG15",
+        },
+        APR => {
+            '1911..d94b' => "SG17",
+            'd95a..'     => "SG18",
+        },
+        allowance => {
+            '1911..d94b' => "SG18",
+            'd95a..'     => "SG19",
+        },
+        requirement => {
+            '1911..d94b' => "SG24",
+            'd95a..'     => "SG25",
+        },
+    },
+};
+
+# $self->metamap('ORDRSP', 'allowance');
+# $self->metamap('ORDRSP', 'allowance', 'd11b');    # override $self's version w/ optional arg.
+
+sub metamap {
+    my $self    = shift    or croak "Illegal direct call to object method metamap()";
+    my $message = shift    or return $self->carp_error("Missing message argument to method metamap()");
+    my $target  = shift    or return $self->carp_error("No argument to method metamap()");
+    $metamap->{$message}   or return $self->carp_error("Message '$message' is not mapped via metamap()");
+    my $v =  @_ ? shift : $self->version;
+    $v or return $self->carp_error("Spec version not set (or passed as optional parameter)");
+    my $ranges = $metamap->{$message}->{$target} or return; # else got nuthin
+    my @keys = keys %$ranges or return;  # no ranges means no hits
+    foreach (@keys) {   # note: unsorted, hence non-overlap requirement, else results undetermined (first hit in keys order)
+        my ($low, $hi);
+        # if (/^([^\.]*)\.\.([^\.]*)$/) {
+        if (/^(.*)\.\.(.*)$/) {
+            $low = $1 || '0900';    # tricky, default "lowest"  value as sorted by spec_version_sort
+            $hi  = $2 || 'zzzz';    #         default "highest" value as sorted by spec_version_sort
+            return $ranges->{$_} if ($v eq $low or $v eq $hi);  # match on a boundary is a hit
+            my @trio = sort {$self->spec_version_sort($a,$b)} ($low, $hi, $v);
+            $debug and print STDERR "metamap sorted (low,val,hi) ($low,$v,$hi): ", join(" ", @trio), ($v eq $trio[1] ? '  MATCH' : '' ), "\n";
+            return $ranges->{$_} if $v eq $trio[1];             # else, if it sorts to the position between bounds, it's a hit
+        } else {    # solitary value
+            $v eq $_ and return $ranges->{$_};
+        }
+    }
+    return $self->carp_error("$message/$target cannot place version $v in " . scalar(@keys) . " ranges: " . join(' ', @keys));
+}
+
+sub metamap_keys {
+    my $self    = shift  or croak "Illegal direct call to object method metamap_keys()";
+    my $message = shift  or return $self->carp_error("Missing message argument to method metamap_keys()");
+    $metamap->{$message} or return $self->carp_error("Message '$message' is not mapped via metamap_keys()");
+    return keys %{$metamap->{$message}};
 }
 
 1;

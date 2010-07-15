@@ -3,11 +3,12 @@
 
 use strict; use warnings;
 
-use Test::More tests => 275;
+use Test::More tests => 331;
 
 BEGIN {
     use_ok('Data::Dumper');
     use_ok('UNIVERSAL::require');
+    use_ok('List::MoreUtils', qw/uniq/);
 
     use_ok('Business::EDI');
     use_ok('Business::EDI::Spec');
@@ -225,6 +226,107 @@ foreach my $v (@versions) {
 my @unsorted = qw# SG47 SG18 ORDRSP/SG26 INVOIC/SG26 INVOIC/SG1 ORDRSP/SG4 SG1 #;
 note "sorted: " . join " ", sort{sg_sort($a,$b)} @unsorted;
 is_deeply(\@sorted_vers, \@versions, "spec_version_sort");
+
+
+my $terms = {
+    line_detail => {
+        '1911' => "SG25",
+        'd94b' => "SG25",
+        'd95a' => "SG26",
+        'd05b' => "SG26",
+        'd06a' => "SG27",
+        'd11a' => "SG27",   # hypothetical
+    },
+    party => {
+        '1911' => "SG2",
+        'd94b' => "SG2",
+        'd95a' => "SG3",
+        'd95b' => "SG3",
+    },
+    currency => {
+        '1911' => "SG7",
+        'd94b' => "SG7",
+        'd95a' => "SG8",
+        'd11a' => "SG8",    # hypothetical
+    },
+    payment_terms => {
+        '1911' => "SG8",
+        'd94b' => "SG8",
+        'd95a' => "SG9",
+        'd11a' => "SG9",    # hypothetical
+    },
+    transport => {
+        '1911' => "SG9",
+        'd94b' => "SG9",
+        'd95a' => "SG10",
+        'd11a' => "SG10",    # hypothetical
+    },
+    delivery_terms => {
+        '1911' => "SG11",
+        'd94b' => "SG11",
+        'd95a' => "SG12",
+        'd11a' => "SG12",    # hypothetical
+    },
+    delivery_schedule => {
+        '1911' => "SG15",
+        'd94b' => "SG15",
+        'd95a' => "SG16",
+        'd97b' => "SG16",
+        'd11a' => "SG16",    # hypothetical
+    },
+    packaging => {
+        '1911' => "SG12",
+        'd94b' => "SG12",
+        'd95a' => "SG13",
+        'd11a' => "SG13",    # hypothetical
+    },
+    mark_label => {
+        '1911' => "SG13",
+        'd94b' => "SG13",
+        'd95a' => "SG14",
+        'd11a' => "SG14",    # hypothetical
+    },
+    handling => {
+        '1911' => "SG14",
+        'd94b' => "SG14",
+        'd95a' => "SG15",
+        'd11a' => "SG15",    # hypothetical
+    },
+    APR => {
+        '1911' => "SG17",
+        'd94b' => "SG17",
+        'd95a' => "SG18",
+        'd11a' => "SG18",    # hypothetical
+    },
+    allowance => {
+        '1911' => "SG18",
+        'd94b' => "SG18",
+        'd95a' => "SG19",
+        'd11a' => "SG19",    # hypothetical
+    },
+    requirement => {
+        '1911' => "SG24",
+        'd94b' => "SG24",
+        'd95a' => "SG25",
+        'd11a' => "SG25",    # hypothetical
+    },
+};
+
+my @uniq;
+foreach my $term (sort keys %$terms) {
+    push @uniq, keys %{$terms->{$term}};
+}
+@uniq = uniq @uniq, '1100', '0000', '0900', 'zzzz', 's93a', 'd93a';
+
+note "spec_version_sort: " . join(' ', sort {spec_version_sort($a,$b)} @uniq);
+
+foreach my $term (sort keys %$terms) {
+    foreach (sort {spec_version_sort($a,$b)} keys %{$terms->{$term}}) {
+        $debug and note "is(Business::EDI::Spec->metamap('ORDRSP', $term, $_), " . $terms->{$term}->{$_} . ", 'ORDRSP/$term in $_')";
+        my $result = Business::EDI::Spec->metamap('ORDRSP', $term, $_);
+        is($result, $terms->{$term}->{$_}, "ORDRSP/$term in $_ => " . $terms->{$term}->{$_});
+    }
+}
 
 #print Dumper($specs->{d96a}), "\n";
 note("done");
