@@ -613,6 +613,39 @@ sub subelement {
     return $new;
 }
 
+# look inside a message body BEFORE we know what it is, and what spec it was written to
+# second argument is for "string only", in which case we just return the composed version string (e.g. 'D96A')
+# otherwise we return a Business::EDI::Message object, or null on failure.
+#
+# my $message = Business:EDI->detect_version_string($body);
+# my $version = Business:EDI->detect_version_string($body, 1);
+
+sub detect_version {
+    my $self = shift;
+    my $body = shift      or return carp_error "missing required argument to detect_version()";
+    ref($body) eq 'ARRAY' or return carp_error "detect_version_string argument must be ARRAYref, not '" . ref($body) . "'";
+    foreach my $node (@$body) {
+        my ($tag, $segbody, @xtra) = @$node;
+        unless ($tag)     { carp "EDI tag received is empty";      next };
+        unless ($segbody) { carp "EDI segment '$tag' has no body"; next };   # IIIIIIiiii, ain't got noboooOOoody!
+        if (scalar @xtra) { carp scalar(@xtra) . " unexpected extra elements encountered in detect_version().  Ignoring!";}
+        $tag eq 'UNH' or next;
+
+        my $agency  = $segbody->{S009}->{'0051'};   # Thankfully these are true in all syntaxes/specs
+        my $pre     = $segbody->{S009}->{'0052'};
+        my $release = $segbody->{S009}->{'0054'};
+        my $type    = $segbody->{S009}->{'0065'};
+        $agency and $agency  eq 'UN' or return carp_error "$tag/S009/0051 does not designate 'UN' as controlling agency";
+        $pre    and uc($pre) eq 'D'  or return carp_error "$tag/S009/0052 does not designate 'D' as spec (prefix) version";
+        $release                     or return carp_error "$tag/S009/0054 (spec release version) is empty (example value: '96A')";
+
+        @_ and $_[0] and return "$pre$release";     #  "string only"
+        my $edi = Business::EDI->new(version => "$pre$release") or
+            return carp_error "Spec unrecognized: Failed to create new " . __PACKAGE__ . " object with version => '$pre$release'";
+        return $edi->message($type, $body);
+    }
+}
+
 1;
 
 package Business::EDI::Segment_group;
