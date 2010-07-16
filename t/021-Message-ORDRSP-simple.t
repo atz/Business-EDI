@@ -20,7 +20,7 @@ my $edi = Business::EDI->new;
 sub parse_ordrsp {
     my ($top_nodes) = @_;
     my $ordrsp;
-    ok($ordrsp = $edi->detect_version($top_nodes), "EDI object via \$edi->version_detect");
+    ok($ordrsp = $edi->detect_version($top_nodes), "EDI object via \$edi->detect_version");
     $debug and print Dumper $ordrsp;
 }
 
