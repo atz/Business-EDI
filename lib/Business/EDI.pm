@@ -45,9 +45,11 @@ sub AUTOLOAD {
     if (ref $self->{def} eq 'ARRAY') {          # spec defined subelements
         if ($name =~ s/^all_(.+)$/$1/i) {
             @_ and croak "AUTOLOAD error: all_$name is read_only, rec'd argument(s): " .  join(', ', @_);
-            $debug and 
-            warn "AUTOLOADing " . $self->{code} . "/all_$name (from " . scalar(@{$self->{array}}) . " arrayed elements): "
-                        . join(' ', map {$_->{code}} @{$self->{array}}) . '  ' . Dumper($self);
+            if ($debug) {
+                warn "AUTOLOADing " . $self->{code} . "/all_$name (from " . scalar(@{$self->{array}}) . " arrayed elements): "
+                        . join(' ', map {$_->{code}} @{$self->{array}});
+                $debug > 1 and print STDERR Dumper($self), "\n";
+            }
             my $target = $name =~ /^SG\d+$/ ? ($self->{code} . "/$name") : $name;
             return grep {$_->{code} and $_->{code} eq $target} @{$self->{array}};    # return array 
         }
@@ -73,9 +75,15 @@ sub _deepload_array {
     foreach (@hits) {
         $total_possible += ($_->{repeats} || 1);
     }
-    $debug and warn "Looking for '$name' matches $hitcount of $defcount subelements, $total_possible instances: " . join(' ', map {$_->{code}} @hits);
-
-    if ($total_possible == 1) {
+    $debug and warn "Looking for '$name' matches $hitcount of $defcount subelements, w/ $total_possible instances: " . join(' ', map {$_->{code}} @hits);
+    $debug and warn ref($self) . " self->{array} has " . scalar(@{$self->{array}}) . " elements of data";
+    
+    # Logic: 
+    # If there is only one possible element to match, then we can read/write to it.
+    # But if there are multiple repetitions possible, then we cannot tell which one to target,
+    # UNLESS it is a read operation and there is only one such element populated.  
+    # Write operation still would be indifferentiable between new element constructor and existing elememt overwrite.
+    if ($total_possible == 1 or ($hitcount == 1 and not @_)) {
         foreach (@{$self->{array}}) {
             $_->code eq $name or next;
             if (@_) {
@@ -85,7 +93,7 @@ sub _deepload_array {
             }
         }
     } elsif ($total_possible == 0) {
-        $debug and print STDERR "FAILED _deepload_array of '$name' in object: ", Dumper($self);
+        $debug and $debug > 1 and print STDERR "FAILED _deepload_array of '$name' in object: ", Dumper($self);
     }
     croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self)
           . "', $hitcount matches ($total_possible repetitions) in subelements";
@@ -101,13 +109,16 @@ sub _deepload {
     my $name = shift    or return;
     $self->{_permitted} or return;
 
-    my @keys = grep {/^C\d{3}$/} keys %{$self->{_permitted}};
+    my @partkeys = $self->part_keys;
+    my @keys     = grep {/^C\d{3}$/} @partkeys;
+    my $allcount = scalar(@partkeys);
+    my $ccount   = scalar(@keys);
+    $debug and warn "Looking for $name under $allcount subelements, $ccount Composites: " . join(' ', @keys);
 
-    my $ccount = scalar(@keys);
-    $debug and warn "Looking for $name under $ccount Composites: " . join(' ', @keys);
-
-    my @hits;
-    if ($ccount) {
+    my @hits = grep {$name eq $_} @partkeys;
+    if (scalar @hits) {
+        
+    } elsif ($ccount) {
         my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can autoload objects";
         my $part = $spec->get_spec('composite');
         foreach my $code (@keys) {
@@ -118,7 +129,7 @@ sub _deepload {
         }
     }
     my $hitcount = scalar(@hits);
-    $debug and warn "Found $name has $hitcount possible matches in $ccount Composites: " . join(' ', @hits);
+    $debug and warn "Found $name has $hitcount possible match(es) in $ccount Composites: " . join(' ', @hits);
     if ($hitcount == 1) {
         if (@_) {
             return $self->{$hits[0]}->{$name} = shift;
@@ -129,8 +140,10 @@ sub _deepload {
         croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self) . "', "
             . " $hitcount indeterminate matches in collapsable subelements";
     }
-    $debug and print STDERR "FAILED _deepload of '$name' in object: ", Dumper($self);
-    croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self) . "' (or $ccount collapsable subelements)"; 
+    # else hitcount == 0
+    $debug and $debug > 1 and print STDERR "FAILED _deepload of '$name' in object: ", Dumper($self);
+    croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self)
+        . "' (or $allcount collapsable subelements, $ccount Composites)";
 }
 
 our $error;          # for the whole class
@@ -158,6 +171,12 @@ sub new {
     }
     $debug and $debug > 1 and print Dumper($self);
     return $self;
+}
+
+sub code {
+    my $self = shift;
+    @_ and $self->{code} = shift;
+    return $self->{code};
 }
 
 sub codelist {
@@ -297,6 +316,7 @@ sub _def_based_constructor {
     $unblessed or return;
     my $new = bless($unblessed, __PACKAGE__ . '::' . ucfirst($type));
     $new->spec($spec);
+    $new->{_permitted}->{code} = 1;
     $new->{code} = $code;
     return $new;
 }
@@ -506,14 +526,27 @@ sub _subelement_helper {
     }
 }
 
-# similar to autoload, but by an exact argument, does get and set
+# Similar to AUTOLOAD, but by an exact argument, does get and set
+# This code should parallel AUTOLOAD tightly.
 sub part {
     my $self  = shift;
     my $class = ref($self) or croak "part() object method error: $self is not an object";
     my $name  = shift or return;
 
     unless (exists $self->{_permitted}->{$name}) {
-        # first try to reach trhough any Cxxx Composites, if the target is unique
+        if ($self->{def}) {
+            if ($name =~ s/^all_(.+)$/$1/i) {   # strip 'all_' prefix
+                @_ and croak "part() error: all_$name is read_only, rec'd argument(s): " .  join(', ', @_);
+                if ($debug) {
+                    warn "part() " . $self->{code} . "/all_$name (from " . scalar(@{$self->{array}}) . " arrayed elements): "
+                            . join(' ', map {$_->{code}} @{$self->{array}});
+                    $debug > 1 and print STDERR Dumper($self), "\n";
+                }
+                my $target = $name =~ /^SG\d+$/ ? ($self->{code} . "/$name") : $name;
+                return grep {$_->{code} and $_->{code} eq $target} @{$self->{array}};    # return array 
+            }
+            return __PACKAGE__->_deepload_array($self, $name, @_); # not $self->_deepload_array - avoid recursion
+        }
         return __PACKAGE__->_deepload($self, $name, @_); # not $self->_deepload - avoid recursion
     }
 
@@ -528,7 +561,7 @@ sub part_keys {
     my $self = shift;
     if ($self->{def}) {
         return map { my $key = $_->{code}; $_->{repeats} > 1 ? "all_$key" : $key } @{$self->{def}};
-   }
+    }
     return keys %{$self->{_permitted}};
     # my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can know what parts an $self object might have";
 }
@@ -646,6 +679,38 @@ sub detect_version {
     }
 }
 
+
+# not really xpath, but xpath-lite-like.  the idea here is to never crash on a valid path, just return undef.
+sub xpath {
+    my $self  = shift;
+    my $path  = shift or return;
+    my $class = ref($self) or croak "xpath() object method error: $self is not an object";
+    $path eq '/' and return $self;
+    $path =~ m#([^-A-z_0-9/\.])# and croak "xpath does not handle '$1' in the path, just decending paths like 'SG27/LIN/1229'";
+    $path =~ m#(//)#             and croak "xpath does not handle '$1' in the path, just decending paths like 'SG27/LIN/1229'";
+    $path =~ m#^/#               and croak "xpath does not handle leading slashes in the path, just decending relative paths like 'SG27/LIN/1229'";
+
+    my ($front, $back) = split "/", $path, 2;
+    defined $front or $front = '';
+    defined $back  or $back  = '';
+    $debug and print STDERR $class . "->xpath($path)  ==>  ->part($front)->xpath($back);\n";
+
+    if ($front) {
+        $back or return $self->part($front);    # no trailing part means we're done!
+        my @ret;
+        push @ret, $self->part($front) or return;   # front might return multiple hits ('all_SG3', for example)
+        return grep {defined $_} map {$_->xpath($back)} @ret;
+    }
+    croak "xpath does not handle leading slashes in the path, just decending relative paths like 'SG27/LIN/1229'";
+}
+
+sub xpath_value {
+    my $self  = shift;
+    my @hits = $self->xpath(@_);
+    @hits or return;
+    return map {$_->value} @hits;
+}
+
 1;
 
 package Business::EDI::Segment_group;
@@ -658,8 +723,29 @@ our $debug;
 package Business::EDI::Message;
 use strict; use warnings;
 use base qw/Business::EDI/;
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 our $debug;
+
+# Business::EDI::Message gets its own part method to handle meta-mapped SGs,
+# but it falls back to the main part method after that.
+
+sub part {
+    my $self  = shift;
+    my $class = ref($self) or croak("part object method error: $self is not an object");
+    my $name  = shift or return;
+    my $code  = $self->{code} or return carp_error("Message type (code) unset.  Cannot assess metamapping.");
+    my $spec  = $self->{spec} or return carp_error("Message spec (code) unset.  Cannot assess metamapping.");
+    my $sg    = $spec->metamap($code, $name);
+    if ($sg) {
+        $debug and warn "Message/field '$code/$name' => '$code/all_$sg' via mapping";
+        $name = "all_$sg";    # new target from mapping
+    } else {
+        $debug and warn "Message/field '$code/$name'  not mapped.  Skipping metamapping";
+    }
+    return $self->SUPER::part($name, @_);
+}
+
+
 1;
 
 __END__
@@ -683,8 +769,9 @@ At present, the EDI input processed by Business::EDI objects is JSON from the B<
 =head1 WARNINGS
 
 This code is preliminary.  EDI is a big spec with many revisions, and the coverage for all 
-segments, elements and message types is not yet present.  At the lowest level, all codelists from the most recent
-spec (D09B) are present.  
+segments, elements and message types is not yet present.
+
+At the lowest level, all codelists from the most recent spec (D09B) are present.  
 
 =head1 SEE ALSO
 

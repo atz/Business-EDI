@@ -6,7 +6,7 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 use UNIVERSAL::require;
 use Data::Dumper;
@@ -436,10 +436,13 @@ my $metamap = {
 # $self->metamap('ORDRSP', 'allowance', 'd11b');    # override $self's version w/ optional arg.
 
 sub metamap {
-    my $self    = shift    or croak "Illegal direct call to object method metamap()";
-    my $message = shift    or return $self->carp_error("Missing message argument to method metamap()");
-    my $target  = shift    or return $self->carp_error("No argument to method metamap()");
-    $metamap->{$message}   or return $self->carp_error("Message '$message' is not mapped via metamap()");
+    my $self    = shift or croak "Illegal direct call to object method metamap()";
+    my $message = shift or return $self->carp_error("Missing message argument to method metamap(), e.g. 'ORDRSP'");
+    my $target  = shift or return $self->carp_error("Missing target argument to method metamap(), e.g. 'line_detail'");
+    unless ($metamap->{$message}) {
+        $debug and $self->carp_error("Message '$message' is not mapped via metamap()");
+        return;
+    }
     my $v =  @_ ? shift : $self->version;
     $v or return $self->carp_error("Spec version not set (or passed as optional parameter)");
     my $ranges = $metamap->{$message}->{$target} or return; # else got nuthin
@@ -461,10 +464,14 @@ sub metamap {
     return $self->carp_error("$message/$target cannot place version $v in " . scalar(@keys) . " ranges: " . join(' ', @keys));
 }
 
+# $spec->metamap_keys('ORDRSP');
 sub metamap_keys {
     my $self    = shift  or croak "Illegal direct call to object method metamap_keys()";
     my $message = shift  or return $self->carp_error("Missing message argument to method metamap_keys()");
-    $metamap->{$message} or return $self->carp_error("Message '$message' is not mapped via metamap_keys()");
+    unless ($metamap->{$message}) {
+        $debug and $self->carp_error("Message '$message' is not mapped via metamap_keys()");
+        return;
+    }
     return keys %{$metamap->{$message}};
 }
 
@@ -488,64 +495,64 @@ messages, segements, data elements, composite data elements, and codelists that 
 U.N. specification.  
 
 The CSV spec files are composed differently for the different structures defined.
-So we have to oarse them differently.
+So we have to parse them differently.
 
-==> Business/EDI/data/edifact/untdid/EDCD.d07a.csv  # Composite Elements
-CompositeCode;label;pos;code;mandatory;def;[pos;code;mandatory;def;...]
-C001;TRANSPORT MEANS;010;8179;C;an..8;020;1131;C;an..17;030;3055;C;an..3;040;8178;C;an..17;
-C002;DOCUMENT/MESSAGE NAME;010;1001;C;an..3;020;1131;C;an..17;030;3055;C;an..3;040;1000;C;an..35;
-C004;EVENT CATEGORY;010;9637;C;an..3;020;1131;C;an..17;030;3055;C;an..3;040;9636;C;an..70;
+ ==> Business/EDI/data/edifact/untdid/EDCD.d07a.csv  # Composite Elements
+ CompositeCode;label;pos;code;mandatory;def;[pos;code;mandatory;def;...]
+ C001;TRANSPORT MEANS;010;8179;C;an..8;020;1131;C;an..17;030;3055;C;an..3;040;8178;C;an..17;
+ C002;DOCUMENT/MESSAGE NAME;010;1001;C;an..3;020;1131;C;an..17;030;3055;C;an..3;040;1000;C;an..35;
+ C004;EVENT CATEGORY;010;9637;C;an..3;020;1131;C;an..17;030;3055;C;an..3;040;9636;C;an..70;
 
-C001 => {label => 'TRANSPORT MEANS;010;8179;C;an..8;020;1131;C;an..17;030;3055;C;an..3;040;8178;C;an..17;
+ C001 => {label => 'TRANSPORT MEANS;010;8179;C;an..8;020;1131;C;an..17;030;3055;C;an..3;040;8178;C;an..17;
 
-==> Business/EDI/data/edifact/untdid/EDED.d07a.csv  # Data Elements
-code;def;class(?):label
-1000;an..35;B;Document name
-1001;an..3;C;Document name code
-1003;an..6;B;Message type code
+ ==> Business/EDI/data/edifact/untdid/EDED.d07a.csv  # Data Elements
+ code;def;class(?):label
+ 1000;an..35;B;Document name
+ 1001;an..3;C;Document name code
+ 1003;an..6;B;Message type code
 
-1000 => {label => 'an..35;B;Document name
+ 1000 => {label => 'an..35;B;Document name
 
-==> Business/EDI/data/edifact/untdid/EDMD.d07a.csv  # Messages
-MessageCode:x:rel:org:z:SegmentGroup;label;SegCode;mandatory;repeats;[SegCode;mandatory;repeats;...]
-APERAK:D:07A:UN::;Application error and acknowledgement message;UNH;M;1;BGM;M;1;DTM;C;9;FTX;C;9;CNT;C;9;SG1;C;99;SG2;C;9;SG3;C;9;SG4;C;99999;UNT;M;1
-APERAK:D:07A:UN::SG1;SG01;DOC;M;1;DTM;C;99
-APERAK:D:07A:UN::SG2;SG02;RFF;M;1;DTM;C;9
+ ==> Business/EDI/data/edifact/untdid/EDMD.d07a.csv  # Messages
+ MessageCode:x:rel:org:z:SegmentGroup;label;SegCode;mandatory;repeats;[SegCode;mandatory;repeats;...]
+ APERAK:D:07A:UN::;Application error and acknowledgement message;UNH;M;1;BGM;M;1;DTM;C;9;FTX;C;9;CNT;C;9;SG1;C;99;SG2;C;9;SG3;C;9;SG4;C;99999;UNT;M;1
+ APERAK:D:07A:UN::SG1;SG01;DOC;M;1;DTM;C;99
+ APERAK:D:07A:UN::SG2;SG02;RFF;M;1;DTM;C;9
 
-APERAK:D:07A:UN:: => {label => 'Application error and acknowledgement message',
+ APERAK:D:07A:UN:: => {label => 'Application error and acknowledgement message',
     UNH;M;1;
     BGM;M;1;
     DTM;C;9;FTX;C;9;CNT;C;9;SG1;C;99;SG2;C;9;SG3;C;9;SG4;C;99999;UNT;M;1
 
-==> Business/EDI/data/edifact/untdid/EDSD.d07a.csv  # Segments
-SegCode;label;pos;code;class;repeats[pos;code;class;repeats;...]
-ADR;ADDRESS;010;C817;C;1;020;C090;C;1;030;3164;C;1;040;3251;C;1;050;3207;C;1;060;C819;C;5;070;C517;C;5;
-AGR;AGREEMENT IDENTIFICATION;010;C543;C;1;020;9419;C;1;
-AJT;ADJUSTMENT DETAILS;010;4465;M;1;020;1082;C;1;
+ ==> Business/EDI/data/edifact/untdid/EDSD.d07a.csv  # Segments
+ SegCode;label;pos;code;class;repeats[pos;code;class;repeats;...]
+ ADR;ADDRESS;010;C817;C;1;020;C090;C;1;030;3164;C;1;040;3251;C;1;050;3207;C;1;060;C819;C;5;070;C517;C;5;
+ AGR;AGREEMENT IDENTIFICATION;010;C543;C;1;020;9419;C;1;
+ AJT;ADJUSTMENT DETAILS;010;4465;M;1;020;1082;C;1;
 
-ADR => {label => 'ADDRESS',
+ ADR => {label => 'ADDRESS',
     010;C817;C;1;020;C090;C;1;030;3164;C;1;040;3251;C;1;050;3207;C;1;060;C819;C;5;070;C517;C;5;
 
-==> Business/EDI/data/edifact/untdid/IDCD.d07a.csv   # Composites (interactive)
-E001 => {label => 'ADDRESS DETAILS;010;3477;M;an..3;020;3286;M;an..70;030;3286;C;an..70;040;3286;C;an..70;050;3286;C;an..70;060;3286;C;an..70;070;3286;C;an..70;
+ ==> Business/EDI/data/edifact/untdid/IDCD.d07a.csv   # Composites (interactive)
+ E001 => {label => 'ADDRESS DETAILS;010;3477;M;an..3;020;3286;M;an..70;030;3286;C;an..70;040;3286;C;an..70;050;3286;C;an..70;060;3286;C;an..70;070;3286;C;an..70;
 
-==> Business/EDI/data/edifact/untdid/IDMD.d07a.csv   # Messages (interactive)
-MsgCode:x:rel:org:z:SegmentGroup;label;SegCode;mandatory;class;repeats;;[mandatory;class;repeats;...]
-IHCEBI:D:07A:UN::;Interactive health insurance eligibility and benefits inquiry and;UIH;M;1;MSD;M;1;SG1;C;9;SG2;C;1;UIT;M;1
-IHCEBI:D:07A:UN::SG1;SG01;PRT;M;1;NAA;C;9;CON;C;9;FRM;C;9
-IHCEBI:D:07A:UN::SG2;SG02;DTI;M;1;ICI;C;1;FRM;C;9;SG3;C;999
-IHCEBI:D:07A:UN::SG3;SG03;BCD;M;1;HDS;C;9;DTI;C;1;PRT;C;9;FRM;C;9
-IHCLME:D:07A:UN::;Health care claim or encounter request and response - interactive;UIH;M;1;MSD;C;1;PRT;C;9;NAA;C;9;CON;C;9;BLI;C;1;ITC;C;1;FRM;C;99;SG1;C;3;SG2;C;99;UIT;M;1
-IHCLME:D:07A:UN::SG1;SG01;OTI;M;1;NAA;C;2
-IHCLME:D:07A:UN::SG2;SG02;PSI;M;1;DNT;C;35
+ ==> Business/EDI/data/edifact/untdid/IDMD.d07a.csv   # Messages (interactive)
+ MsgCode:x:rel:org:z:SegmentGroup;label;SegCode;mandatory;class;repeats;;[mandatory;class;repeats;...]
+ IHCEBI:D:07A:UN::;Interactive health insurance eligibility and benefits inquiry and;UIH;M;1;MSD;M;1;SG1;C;9;SG2;C;1;UIT;M;1
+ IHCEBI:D:07A:UN::SG1;SG01;PRT;M;1;NAA;C;9;CON;C;9;FRM;C;9
+ IHCEBI:D:07A:UN::SG2;SG02;DTI;M;1;ICI;C;1;FRM;C;9;SG3;C;999
+ IHCEBI:D:07A:UN::SG3;SG03;BCD;M;1;HDS;C;9;DTI;C;1;PRT;C;9;FRM;C;9
+ IHCLME:D:07A:UN::;Health care claim or encounter request and response - interactive;UIH;M;1;MSD;C;1;PRT;C;9;NAA;C;9;CON;C;9;BLI;C;1;ITC;C;1;FRM;C;99;SG1;C;3;SG2;C;99;UIT;M;1
+ IHCLME:D:07A:UN::SG1;SG01;OTI;M;1;NAA;C;2
+ IHCLME:D:07A:UN::SG2;SG02;PSI;M;1;DNT;C;35
 
 
-==> Business/EDI/data/edifact/untdid/IDSD.d07a.csv   # Segments (interactive)
-SegCode;label;pos;code;mandatory;repeats(?)
-AAI;ACCOMMODATION ALLOCATION INFORMATION;010;E997;M;20;
-ADS;ADDRESS;010;E817;C;1;020;E001;C;1;030;3164;C;1;040;3251;C;1;050;3207;C;1;060;E819;C;1;070;E517;C;1;
+ ==> Business/EDI/data/edifact/untdid/IDSD.d07a.csv   # Segments (interactive)
+ SegCode;label;pos;code;mandatory;repeats(?)
+ AAI;ACCOMMODATION ALLOCATION INFORMATION;010;E997;M;20;
+ ADS;ADDRESS;010;E817;C;1;020;E001;C;1;030;3164;C;1;040;3251;C;1;050;3207;C;1;060;E819;C;1;070;E517;C;1;
 
-AAI => {label => 'ACCOMMODATION ALLOCATION INFORMATION',
+ AAI => {label => 'ACCOMMODATION ALLOCATION INFORMATION',
     pos => '010',
     E997;M;20;
 
