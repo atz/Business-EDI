@@ -46,7 +46,7 @@ sub init {
     $codes->{$code} or return;
     $self->{code } = $code;
     $self->{label} = $codes->{$code};
-    $self->{value} = shift if @_;
+    $self->{value} = shift if scalar @_;
     $self->{desc } = $self->desc($self->{label});
     $self->{_permitted} = {(map {$_ => 1} @fields)};
     return $self;
