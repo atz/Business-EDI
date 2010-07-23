@@ -705,9 +705,10 @@ sub xpath {
 }
 
 sub xpath_value {
-    my $self  = shift;
+    my $self = shift;
     my @hits = $self->xpath(@_);
     @hits or return;
+    wantarray or return $hits[0]->value;
     return map {$_->value} @hits;
 }
 
