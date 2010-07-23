@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 154;
+use Test::More tests => 158;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -24,6 +24,7 @@ my %sg_counts = (
     all_SG26 => 18,
     line_detail   => 18,
    "all_SG26/LIN" => 18,
+#  "line_detail/line_reference" => 18,
    "line_detail/LIN"            => 18,
    "line_detail/all_QTY"        => 54,
    "line_detail/all_QTY/6063"   => 54,
@@ -98,9 +99,9 @@ sub parse_ordrsp {
     foreach (qw# UNH BGM DTM UNS CNT UNT UNH/0062 UNH/S009 #) {    # SG1 SG3 SG8
         ok($ordrsp->xpath($_), "self->xpath('$_')");
     }
-    # $Business::EDI::debug = 1;
     foreach (sort {($sg_counts{$a} <=> $sg_counts{$b}) || $a cmp $b} keys %sg_counts) {
         my @hits;
+        # /line_reference/ and $Business::EDI::debug = 1;
         ok(@hits = $ordrsp->xpath($_),    "self->xpath('$_')");
         is(scalar(@hits), $sg_counts{$_}, "self->xpath('$_') returns expected number of elements ($sg_counts{$_})");
     }
@@ -130,7 +131,12 @@ sub parse_ordrsp {
             my $val = shift(@vals);
             is($_->value, $val, "self->xpath_value('line_detail/all_QTY/6063') ($val)");
         }
-    }
+    };
+    is($ordrsp->xpath_value('UNH/S009/0051'), 'UN',     "->xpath_value('UNH/S009/0051')");
+    is($ordrsp->xpath_value('UNH/S009/0052'), 'D',      "->xpath_value('UNH/S009/0052')");
+    is($ordrsp->xpath_value('UNH/S009/0065'), 'ORDRSP', "->xpath_value('UNH/S009/0065')");
+    is($ordrsp->xpath_value('UNH/S009/0054'), '96A',    "->xpath_value('UNH/S009/0054')");
+    # print Dumper($ordrsp->xpath('UNH/S009/0065'));
     # $debug and $debug > 1 and print Dumper $ordrsp;
 }
 
