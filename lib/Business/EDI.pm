@@ -724,7 +724,7 @@ package Business::EDI::Segment_group;
 use strict; use warnings;
 use Carp;
 use base qw/Business::EDI/;
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 our $debug;
 
 sub sg_code {
