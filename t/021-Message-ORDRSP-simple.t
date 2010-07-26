@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 158;
+use Test::More tests => 175;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -24,7 +24,7 @@ my %sg_counts = (
     all_SG26 => 18,
     line_detail   => 18,
    "all_SG26/LIN" => 18,
-#  "line_detail/line_reference" => 18,
+   "line_detail/line_reference" => 18,
    "line_detail/LIN"            => 18,
    "line_detail/all_QTY"        => 54,
    "line_detail/all_QTY/6063"   => 54,
@@ -114,15 +114,52 @@ sub parse_ordrsp {
         is(($sixty60 ? $sixty60->value : 0) || 0, $pair[1], sprintf("%40s", $sixty63->label) . " (code $pair[0]): $pair[1]");
         # printf "%50s (%2d): %s\n", $sixty63->label, $sixty63->value, ($sixty60 ? $sixty60->value : '--');
     }
+
+    ok($ordrsp->xpath("all_SG26/all_QTY/C186/6063"),          '->xpath("all_SG26/all_QTY/C186/6063")');
+    ok($ordrsp->xpath("line_detail/all_QTY"),                 '->xpath("line_detail/all_QTY")');
+    ok($ordrsp->xpath("line_detail/all_QTY/6063"),            '->xpath("line_detail/all_QTY/6063")');
+    ok($ordrsp->xpath("line_detail/line_reference"),          '->xpath("line_detail/line_reference")');
+    ok($ordrsp->xpath("line_detail/line_reference/RFF"),      '->xpath("line_detail/line_reference/RFF")');
+    ok($ordrsp->xpath("line_detail/line_reference/RFF/1154"), '->xpath("line_detail/line_reference/RFF/1154")');
+
     is_deeply([($ordrsp->xpath("all_SG26/all_QTY/C186/6063"))], 
               [($ordrsp->xpath("all_SG26/all_QTY/6063"     ))], 
               "self->xpath('all_SG26/all_QTY/C186/6063') === self->xpath('all_SG26/all_QTY/6063')");
+
     is_deeply([($ordrsp->xpath("line_detail/all_QTY"       ))], 
               [($ordrsp->xpath("all_SG26/all_QTY"          ))], 
               "self->xpath('line_detail/all_QTY')        === self->xpath('all_SG26/all_QTY')");
+
     is_deeply([($ordrsp->xpath("line_detail/all_QTY/6063"  ))], 
               [($ordrsp->xpath("all_SG26/all_QTY/6063"     ))], 
               "self->xpath('line_detail/all_QTY/6063')   === self->xpath('all_SG26/all_QTY/6063')");
+
+    is_deeply([($ordrsp->xpath("line_detail/line_reference"))], 
+              [($ordrsp->xpath("all_SG26/line_reference"     ))], 
+              "self->xpath('line_detail/line_reference') === self->xpath('all_SG26/line_reference')");
+
+    ok($ordrsp->xpath("line_detail"),                    '->xpath("line_detail")');
+    ok($ordrsp->xpath("line_detail/SG31"),               '->xpath("line_detail/SG31")');
+    ok($ordrsp->xpath("line_detail/SG31/RFF"),           '->xpath("line_detail/SG31/RFF")');
+    ok($ordrsp->xpath("line_detail/SG31/RFF/C506"),      '->xpath("line_detail/SG31/RFF/C506")');
+    ok($ordrsp->xpath("line_detail/SG31/RFF/C506/1154"), '->xpath("line_detail/SG31/RFF/C506/1154")');
+
+    is_deeply([($ordrsp->xpath("line_detail/line_price"))], 
+              [($ordrsp->xpath("all_SG26/line_price"     ))], 
+              "self->xpath('line_detail/line_price')     === self->xpath('all_SG26/line_price')");
+    ok($ordrsp->xpath_value("line_detail/line_reference/RFF/1154"), '->xpath_value("line_detail/line_reference/RFF/1154")');
+
+    my @val_1154 = $ordrsp->xpath_value("line_detail/line_reference/RFF/1154");
+    subtest 'self->xpath_value("line_detail/line_reference/RFF/1154")' => sub {
+        plan tests => 18;
+        foreach (1..19) {
+            @val_1154 or last;
+            $_ == 5 and next;   # Test data skips 5
+            my $rff = shift @val_1154;
+            $rff =~ s#^.*/##;
+            is($_, $rff, 'self->xpath_value("line_detail/line_reference/RFF/1154") ' . $_);
+        }
+    };
 
     my @vals = $ordrsp->xpath_value("line_detail/all_QTY/6063");
     subtest "self->xpath_value('line_detail/all_QTY/6063')" => sub {

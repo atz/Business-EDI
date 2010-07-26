@@ -64,7 +64,7 @@ sub _deepload_array {
     my $self = shift or return;
     my $name = shift or return;
     unless ($self->{def}) {
-        die "_deepload_array attempted on an object that does not have a spec definition";
+        die "_deepload_array of '$name' attempted on an object that does not have a spec definition";
         return;
     }
 
@@ -75,6 +75,7 @@ sub _deepload_array {
     foreach (@hits) {
         $total_possible += ($_->{repeats} || 1);
     }
+    $name =~ /^SG\d+$/ and $name = $self->{message_code} . "/$name";    # adjust key for SGs
     $debug and warn "Looking for '$name' matches $hitcount of $defcount subelements, w/ $total_possible instances: " . join(' ', map {$_->{code}} @hits);
     $debug and warn ref($self) . " self->{array} has " . scalar(@{$self->{array}}) . " elements of data";
     
@@ -95,7 +96,7 @@ sub _deepload_array {
     } elsif ($total_possible == 0) {
         $debug and $debug > 1 and print STDERR "FAILED _deepload_array of '$name' in object: ", Dumper($self);
     }
-    croak "AUTOLOAD error: Cannot access '$name' field of class '" . ref($self)
+    croak "AUTOLOAD error: Cannot " . (@_ ? 'write' : 'read') . " '$name' field of class '" . ref($self)
           . "', $hitcount matches ($total_possible repetitions) in subelements";
 }
 # my $otherspec = $spec->get_spec('composite');
@@ -316,8 +317,13 @@ sub _def_based_constructor {
     $unblessed or return;
     my $new = bless($unblessed, __PACKAGE__ . '::' . ucfirst($type));
     $new->spec($spec);
-    $new->{_permitted}->{code} = 1;
+    $new->{_permitted}->{code}         = 1;
+    $new->{_permitted}->{message_code} = 1;
     $new->{code} = $code;
+    $new->{message_code} = $message_code;   # same as code for messages, different for SGs
+    if ($type eq 'segment_group') {
+        $new->{sg_code}  = $page_code;   
+    }
     return $new;
 }
 
@@ -542,7 +548,7 @@ sub part {
                             . join(' ', map {$_->{code}} @{$self->{array}});
                     $debug > 1 and print STDERR Dumper($self), "\n";
                 }
-                my $target = $name =~ /^SG\d+$/ ? ($self->{code} . "/$name") : $name;
+                my $target = $name =~ /^SG\d+$/ ? ($self->{message_code} . "/$name") : $name;
                 return grep {$_->{code} and $_->{code} eq $target} @{$self->{array}};    # return array 
             }
             return __PACKAGE__->_deepload_array($self, $name, @_); # not $self->_deepload_array - avoid recursion
@@ -716,9 +722,51 @@ sub xpath_value {
 
 package Business::EDI::Segment_group;
 use strict; use warnings;
+use Carp;
 use base qw/Business::EDI/;
 our $VERSION = 0.01;
 our $debug;
+
+sub sg_code {
+    my $self = shift or return;
+    @_ and croak "sg_code is read only (no args)";
+    return $self->{sg_code};
+}
+
+# Business::EDI::Segment_group gets its own part method to handle meta-mapped SGs INSIDE other SGs,
+# but it falls back to the main part method after that.
+
+sub part {
+    my $self  = shift;
+    my $class = ref($self) or croak("part object method error: $self is not an object");
+    my $name  = shift or return;
+    my $code  = $self->{message_code} or return $self->carp_error("Message type (code) unset.  Cannot assess metamapping.");
+    my $spec  = $self->{spec}         or return $self->carp_error("Message spec (code) unset.  Cannot assess metamapping.");
+    my $sg    = $spec->metamap($code, $name);
+    if ($sg) {
+        $debug and warn "SG Message/field '$code/$name' ==> '$code/all_$sg' via mapping";
+        if ($sg =~ /\//) {
+            my $obj;
+            my @chunks = split '/', $sg;
+            my $first  = shift @chunks;   
+            my $last   = pop   @chunks;   
+            $first eq $self->{sg_code} or return $self->carp_error("Mapped target $sg descends from $code/$first, not " . $self->{sg_code});
+            foreach (@chunks) {
+                $obj = $obj ? $obj->SUPER::part("all_$_") : $self->SUPER::part("all_$_");
+                $obj or warn "Mapped SG $sg part 'all_$_' not found";
+                $obj or return;
+            }
+            return $obj ? $obj->SUPER::part("all_$last", @_) : $self->SUPER::part("all_$last", @_);  # only the last part gets the remaining args
+        } else {
+            return $self->carp_error("Mapped target $sg is not under " . $self->{code});
+        }
+    } else {
+        $debug and warn "Message/field '$code/$name'  not mapped.  Skipping metamapping";
+    }
+    return $self->SUPER::part($name, @_);
+}
+
+
 1;
 
 package Business::EDI::Message;
@@ -734,10 +782,11 @@ sub part {
     my $self  = shift;
     my $class = ref($self) or croak("part object method error: $self is not an object");
     my $name  = shift or return;
-    my $code  = $self->{code} or return carp_error("Message type (code) unset.  Cannot assess metamapping.");
-    my $spec  = $self->{spec} or return carp_error("Message spec (code) unset.  Cannot assess metamapping.");
+    my $code  = $self->{message_code} or return carp_error("Message type (code) unset.  Cannot assess metamapping.");
+    my $spec  = $self->{spec}         or return carp_error("Message spec (code) unset.  Cannot assess metamapping.");
     my $sg    = $spec->metamap($code, $name);
     if ($sg) {
+        $sg =~ s#/#/all_#;    # e.g. SG26/SG30 => SG26/all_SG30
         $debug and warn "Message/field '$code/$name' => '$code/all_$sg' via mapping";
         $name = "all_$sg";    # new target from mapping
     } else {

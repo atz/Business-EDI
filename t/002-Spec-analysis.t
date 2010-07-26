@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 331;
+use Test::More tests => 341;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -310,6 +310,19 @@ my $terms = {
         'd95a' => "SG25",
         'd11a' => "SG25",    # hypothetical
     },
+    line_reference => {
+        '1911' => "SG25/SG27",
+        '1921' => "SG25/SG28",
+        'd94b' => "SG25/SG28",
+        'd95a' => "SG26/SG30",
+        'd95b' => "SG26/SG30",
+        'd96a' => "SG26/SG31",
+        'd97a' => "SG26/SG31",
+        'd05b' => "SG26/SG31",
+        'd06a' => "SG27/SG32",
+        'd11a' => "SG27/SG32",  # hypothetical
+    },
+
 };
 
 my @uniq;
