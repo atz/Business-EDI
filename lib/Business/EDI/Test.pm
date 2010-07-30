@@ -11,7 +11,7 @@ use vars qw/$VERSION @EXPORT_OK $parser/;
 
 BEGIN {
     $VERSION = 0.02;
-    @EXPORT_OK = qw/ JSONObject2Perl ordrsp_data/;
+    @EXPORT_OK = qw/ JSONObject2Perl ordrsp_data pretty_json /;
 }
 
 
@@ -34,8 +34,18 @@ sub JSONObject2Perl {
     return $obj;
 }
 
+sub pretty_json {
+    @_ or die "pretty_json() missing required argument";
+    unless ($parser) {
+        $parser = JSON::XS->new;
+        $parser->ascii(1);        # output \u escaped strings for any char with a value over 127
+        $parser->allow_nonref(1); # allows non-reference values to equate to themselves (see perldoc)
+    }
+    return $parser->indent(1)->space_before(1)->decode(shift);
+}
+
 sub ordrsp_data {
-    unless($parser) {
+    unless ($parser) {
         $parser = JSON::XS->new;
         $parser->ascii(1);        # output \u escaped strings for any char with a value over 127
         $parser->allow_nonref(1); # allows non-reference values to equate to themselves (see perldoc)
