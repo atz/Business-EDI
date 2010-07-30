@@ -278,37 +278,6 @@ sub _def_based_constructor {
     unless (ref($body) eq 'ARRAY') {
         return $self->carp_error("body argument to $type() must be ARRAYREF, not '" . ref($body) . "'");
     }
-=head1 JUNK
-
-    my @parts     = @{$page->{$code}->{parts}};
-    my $partcount = scalar @parts;
-
-    my @normal;
-    my $i = 0;  # index of spec parts
-    # Now we normalize the body according to the spec (apply wrappers)
-    BODYPART: foreach my $chunk (@$body) {
-        my $key = $chunk->[0];
-        # print STDERR "Trying to match $key: ", Dumper($chunk->[1]);
-        while ($i < $partcount) {   # advance through available spec elements
-            $_ = $parts[$i];
-            print STDERR "Comparing '$key' against spec part $i: ", $_->{code}, "\n";
-            $i++;   # Don't use $i below here (it now has the "next" value)
-            if ($_->{code} eq $key) {   # If this bodypart is allowed here, add it.
-                print STDERR "$key Matched\n";
-                push @normal, $chunk;
-                next BODYPART;
-            }
-            $_->{mandatory} and print STDERR "Required field $type/" . $_->{code} . " found w/ index ", $_->{index}, "\n";
-            # $_->{mandatory} and return $self->carp_error("Required field $type/" . $_->{code} . " not in position " . $_->{index} . ". Got '$key'.");
-            push @normal, undef;
-        }
-    }
-
-    # $debug and printf STDERR "creating $type/$code with %d spec subparts: %s\n", scalar(@parts), join(' ', map {$_->{code}} @partcodes);
-    # push @subparts,  'debug';
-    # my $unblessed = $self->unblessed_array(\@normal, $page->{$code}->{parts});     # doesn't yet support arrayref(?)
-
-=cut
 
     my @subparts = @{$page->{$page_code}->{parts}};
     $debug and printf STDERR "creating $type/$code with %d spec subpart(s): %s\n", scalar(@subparts), join(' ', map {$_->{code}} @subparts);
@@ -563,6 +532,9 @@ sub part {
     }
 }
 
+# part_keys gives you values that are always valid as the argument to the same object's part() method
+# TODO: mix/match both _permitted and def based?  Maybe.
+
 sub part_keys {
     my $self = shift;
     if ($self->{def}) {
@@ -652,37 +624,11 @@ sub subelement {
     return $new;
 }
 
-# look inside a message body BEFORE we know what it is, and what spec it was written to
-# second argument is for "string only", in which case we just return the composed version string (e.g. 'D96A')
-# otherwise we return a Business::EDI::Message object, or null on failure.
-#
-# my $message = Business:EDI->detect_version_string($body);
-# my $version = Business:EDI->detect_version_string($body, 1);
+# TODO: rename this something more clueful
 
 sub detect_version {
     my $self = shift;
-    my $body = shift      or return carp_error "missing required argument to detect_version()";
-    ref($body) eq 'ARRAY' or return carp_error "detect_version_string argument must be ARRAYref, not '" . ref($body) . "'";
-    foreach my $node (@$body) {
-        my ($tag, $segbody, @xtra) = @$node;
-        unless ($tag)     { carp "EDI tag received is empty";      next };
-        unless ($segbody) { carp "EDI segment '$tag' has no body"; next };   # IIIIIIiiii, ain't got noboooOOoody!
-        if (scalar @xtra) { carp scalar(@xtra) . " unexpected extra elements encountered in detect_version().  Ignoring!";}
-        $tag eq 'UNH' or next;
-
-        my $agency  = $segbody->{S009}->{'0051'};   # Thankfully these are true in all syntaxes/specs
-        my $pre     = $segbody->{S009}->{'0052'};
-        my $release = $segbody->{S009}->{'0054'};
-        my $type    = $segbody->{S009}->{'0065'};
-        $agency and $agency  eq 'UN' or return carp_error "$tag/S009/0051 does not designate 'UN' as controlling agency";
-        $pre    and uc($pre) eq 'D'  or return carp_error "$tag/S009/0052 does not designate 'D' as spec (prefix) version";
-        $release                     or return carp_error "$tag/S009/0054 (spec release version) is empty (example value: '96A')";
-
-        @_ and $_[0] and return "$pre$release";     #  "string only"
-        my $edi = Business::EDI->new(version => "$pre$release") or
-            return carp_error "Spec unrecognized: Failed to create new " . __PACKAGE__ . " object with version => '$pre$release'";
-        return $edi->message($type, $body);
-    }
+    return Business::EDI::Message->new(@_);
 }
 
 
@@ -771,6 +717,7 @@ sub part {
 
 package Business::EDI::Message;
 use strict; use warnings;
+use Carp;
 use base qw/Business::EDI/;
 our $VERSION = 0.02;
 our $debug;
@@ -795,6 +742,41 @@ sub part {
     return $self->SUPER::part($name, @_);
 }
 
+# This is a very high level method.
+# We look inside a message body BEFORE we know what it is, and what spec it was written to.
+# Second argument is a flag for "string only", in which case we just return the composed version string (e.g. 'D96A')
+# otherwise we return a Business::EDI::Message object, or null on failure.
+#
+# my $message = Business:EDI::Message->new($body);
+# my $version = Business:EDI::Message->new($body, 1);
+# 
+# Handles ALL valid message types
+
+sub new {
+    my $class = shift;
+    my $body  = shift     or return $class->carp_error("missing required argument to detect_version()");
+    ref($body) eq 'ARRAY' or return $class->carp_error("detect_version_string argument must be ARRAYref, not '" . ref($body) . "'");
+    foreach my $node (@$body) {
+        my ($tag, $segbody, @xtra) = @$node;
+        unless ($tag)     { carp "EDI tag received is empty";      next };
+        unless ($segbody) { carp "EDI segment '$tag' has no body"; next };   # IIIIIIiiii, ain't got noboooOOoody!
+        if (scalar @xtra) { carp scalar(@xtra) . " unexpected extra elements encountered in detect_version().  Ignoring!";}
+        $tag eq 'UNH' or next;
+
+        my $agency  = $segbody->{S009}->{'0051'};   # Thankfully these are true in all syntaxes/specs
+        my $pre     = $segbody->{S009}->{'0052'};
+        my $release = $segbody->{S009}->{'0054'};
+        my $type    = $segbody->{S009}->{'0065'};
+        $agency and $agency  eq 'UN' or return $class->carp_error("$tag/S009/0051 does not designate 'UN' as controlling agency");
+        $pre    and uc($pre) eq 'D'  or return $class->carp_error("$tag/S009/0052 does not designate 'D' as spec (prefix) version");
+        $release                     or return $class->carp_error("$tag/S009/0054 (spec release version) is empty (example value: '96A')");
+
+        @_ and $_[0] and return "$pre$release";     #  "string only"
+        my $edi = Business::EDI->new(version => "$pre$release") or
+            return $class->carp_error("Spec unrecognized: Failed to create new Business::EDI object with version => '$pre$release'");
+        return $edi->message($type, $body);
+    }
+}
 
 1;
 
