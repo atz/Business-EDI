@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 # use Data::Dumper;
 
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 use UNIVERSAL::require;
 use Data::Dumper;
@@ -378,9 +378,7 @@ sub carp_error {
     return;     # undef: important!
 }
 
-=head2 ->unblessed($body, \@codes)
-
-=cut
+# ->unblessed($body, \@codes)
 
 sub unblessed {     # call like Business::EDI->unblessed(\%hash, \@codes);
     my $class    = shift;
@@ -794,20 +792,149 @@ Business::EDI - Top level class for generating U.N. EDI interchange objects and 
   my $rtc = $edi->codelist('ResponseTypeCode', $json) or die "Unrecognized code!";
   printf "EDI response type: %s - %s (%s)\n", $rtc->code, $rtc->label, $rtc->value;
 
+  my $msg = Business::EDI::Message->new($ordrsp) or die "Failed Message constructor";
+  foreach ($msg->xpath('line_detail/all_LIN') {
+      ($_->part(7143) || '') eq 'EN' or next;
+      print $_->part(7140)->value, "\n";    # print all the 13-digit (EN) ISBNs
+  }
+
+
 =head1 DESCRIPTION
 
-At present, the EDI input processed by Business::EDI objects is JSON from the B<edi4r> ruby library.  
+The focus of functionality is to provide object based access to EDI messages and subelements.
+At present, the EDI input processed by Business::EDI objects is JSON from the B<edi4r> ruby library, and
+there is no EDI output beyond the perl objects themselves.
+
+=head1 NAMESPACE
+
+When you C<use Business::EDI;> the following package namespaces are also loaded:
+    L<Business::EDI::Segment_group>
+    L<Business::EDI::Message> 
+
+That's why the example message constructor in SYNOPSIS would succeed without having done C<use Business::EDI::Message;>
+
+=head1 EDI Structure
+
+Everything depends on the spec.  That means you have to have declared a spec version before you can create
+or parse a given chunk of data.  The exception is a whole EDI message, because each message declares its 
+spec version internally.  
+
+EDI has a hierachical specification defining data.  From top to bottom, it includes:
+
+=over
+
+=item B<Communication> - containing one or more messages (not yet modeled here)
+
+=item B<Message>       - containing segment groups and segments
+
+=item B<Segment Group> - containing segments
+
+=item B<Segment>       - containing composites, codelists and data elements
+
+=item B<Composite>     - containing multiple codelists and/or data elements
+
+=item B<Codelist>      - enumerated value from a spec-defined set
+
+=item B<Data Element>  - unenumerated value
+
+=back
+
+This module handles messages and everything below, but not (yet) communications. 
+
+=head1 CLASS FUNCTIONS
+
+Much more documentation needed here...
+
+=head2 new()
+
+Constructor
+
+=head1 OBJECT METHODS (General)
+
+=head2 value()
+
+Get/set accessor for the value of the field.
+
+=head2 code()
+
+The string code designating this node's type.  The code is what is what the spec uses to refer to the object's definition.
+For example, a composite "C504", segment "RFF", data element "7140", etc.
+
+Don't be confused when dealing with CodeList objects.  Calling code() gets you the 4-character code of the CodeList field, NOT
+what that CodeList is currently set to.  For that use value().  
+
+=head2 desc()
+
+English description of the element.
+
+=head1 METHODS (for Traversal)
+
+=head2 part_keys()
+
+This method returns strings that can be fed to part() like:
+    foreach ($x->part_keys) { something($x->part($_)) }
+
+This is similar to doing:
+    foreach (keys %x) { something($x{$_}) }
+
+In this way an object can be exhaustively, recursively parsed without further knowledge of it.
+
+=head2 part($key)
+
+Returns subelement(s) of the object.  The key can reference any subobject allowed by the spec.  If the subobject is repeatable,
+then prepending "all_" to the key will return an array of all such subobjects.  This is the safest and most comprehensive approach.
+Using part($key) without "all_" to retrieve when there is only one $key subobject will succeed.
+Using part($key) without "all_" to retrieve when there are multiple $key subobjects will FAIL.  Since that difference is only dependent on data, 
+you should always use "all_" when dealing with a repeatable field (or xpath, see below).
+
+Examples:
+
+    my $qty  = $detail->part('QTY');      # FAILURE PRONE!
+    my @qtys = $detail->part('all_QTY');  # OK!
+
+
+=head2 xpath($path)
+
+$path can traverse multiple depths in representation via one call.  For example:
+
+    $message->xpath('all_SG26/all_QTY/6063')
+
+is like this function foo():
+
+    sub foo {
+        my @x;
+        for my $sg ($message->part->('all_SG26') {
+            for ($sg->part('all_QTY') {
+                push @x, $->part('6063');
+            }
+        }
+        return @x;
+    }
+
+The xpath version is much nicer!  However this is nowhere near as fully featured as
+W3C xpath for XML.  This is more like a multple-depth part().  
+
+Examples:
+    my @obj_1154 = $message->xpath('line_detail/SG31/RFF/C506/1154');
+
+=head2 xpath_value($path)
+
+Returns value(s) instead of object(s).
+
+Examples:
+    'ORDRSP' eq $ordrsp->xpath_value('UNH/S009/0065') or die "Wrong Message Type!";
+
 
 =head1 WARNINGS
 
-This code is preliminary.  EDI is a big spec with many revisions, and the coverage for all 
-segments, elements and message types is not yet present.
+This code is experimental.  EDI is a big spec with many revisions.
 
-At the lowest level, all codelists from the most recent spec (D09B) are present.  
+At the lower levels, all data elements, codelists, composites and segments from the most recent spec (D09B) are present.  
 
 =head1 SEE ALSO
 
-edi4r - http://edi4r.rubyforge.org
+ Business::EDI::Spec
+ edi4r - http://edi4r.rubyforge.org
 
 =head1 AUTHOR
 
