@@ -1,5 +1,15 @@
 Revision history for Business-EDI
 
+0.03    2010-08-04
+        Metamap segment groups for ORDERS, complete with spec range syntax and 
+        sort function for spec designations.
+        xpath accessor, like $ordrsp->xpath("SG27/LIN/1229").
+        xpath accessor, w/ metamap like $ordrsp->xpath("line_details/LIN/1229").
+        Segment_group package.
+        Message package.
+        Many tests.
+        Some POD documentation.
+
 0.02    2010-05-21
         CSV spec files now govern Segment and Composite creation, parsing.
         Business::EDI::Spec class handles location and parsing of spec CSV files.
@@ -7,7 +17,6 @@ Revision history for Business-EDI
         Additional tests added.
         Deeploading (AUTOLOAD through subelements), i.e. collapsible Composites.
         Data normalization on segment and message constructors.
-
 
 0.01    2010-04-14
         Rudimentary first version, mainly for incoming ORDRSP data.

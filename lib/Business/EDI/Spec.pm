@@ -73,7 +73,7 @@ sub get_spec_dir {
     $self->{spec_dir} and return $self->{spec_dir};
     $spec_dir         and return $spec_dir;
     my $target = 'Business/EDI/data/edifact/untdid';    # path relative to @INC.  Don't worry about filesystem oddities (see split below)
-    my @dirs   = @INC;
+    my @dirs   = grep {-d} @INC;    # skip non-existant dirs, as in Debian default @INC (-d implies -e)
     foreach (split /\//, $target) {
         @dirs = File::Find::Rule->maxdepth(1)->name($_)->directory()->in(@dirs);
     }

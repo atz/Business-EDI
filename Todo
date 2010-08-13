@@ -3,8 +3,6 @@ TODO list for Perl module Business::EDI
 - Extend Spec-driven approach to smaller objects: Data Elements, Composites, etc.
 - I18n
 - Lots of docs
-- xpath-like accessor, like $ordrsp->xpath("SG27/LIN/1229")
-- xpath-like accessor, w/ metamap like $ordrsp->xpath("line_details/LIN/1229")
 - Spec "Line" package/objects
 
 Long Term:
