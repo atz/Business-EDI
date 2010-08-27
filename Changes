@@ -1,5 +1,9 @@
 Revision history for Business-EDI
 
+0.04    2010-08-27
+        HTML output added (html method).  
+        Composite "value" removed (they have subparts, not a value).  
+
 0.03    2010-08-04
         Metamap segment groups for ORDERS, complete with spec range syntax and 
         sort function for spec designations.

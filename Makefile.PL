@@ -9,6 +9,7 @@ WriteMakefile(
     AUTHOR       => 'Joe Atzberger (atz@esilibrary.com)',
     ABSTRACT     => 'Top level generator of U.N. EDI objects',
     PREREQ_PM    => {
+                     'CGI' => 3.1,
                      'Test::More' => 0.92,
                      'Test::Simple' => 0.88,
                      'Exporter::Easy' => 0.14,

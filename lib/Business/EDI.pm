@@ -5,19 +5,22 @@ use warnings;
 use Carp;
 # use Data::Dumper;
 
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
 use UNIVERSAL::require;
 use Data::Dumper;
-use File::Find::Rule;
 use File::Spec;
+use CGI qw//;
 use Business::EDI::CodeList;
 use Business::EDI::Composite;
 use Business::EDI::DataElement;
 use Business::EDI::Segment;
 use Business::EDI::Spec;
+
 our $debug = 0;
 our %debug = ();
+our $error;          # for the whole class
+my %fields = ();
 
 our $AUTOLOAD;
 sub DESTROY {}  #
@@ -93,16 +96,16 @@ sub _deepload_array {
                 return $_;
             }
         }
+        # if we got here, it's a valid target w/ no populated value (no code match)
+        return;
+        # @_ or return $self->_subelement_helper($name, {}, $self->{message_code});   # so you get an empty object of the correct type on read
+        # TODO: for 1-hit write, splice in at the correct position.  Tricky.
     } elsif ($total_possible == 0) {
         $debug and $debug > 1 and print STDERR "FAILED _deepload_array of '$name' in object: ", Dumper($self);
     }
     croak "AUTOLOAD error: Cannot " . (@_ ? 'write' : 'read') . " '$name' field of class '" . ref($self)
           . "', $hitcount matches ($total_possible repetitions) in subelements";
 }
-# my $otherspec = $spec->get_spec('composite');
-# foreach (grep {/^C\d{3}$/} @subparts) {
-#     push @subparts, map {$_->{code}} @{$otherspec->{$_}->{parts}};
-# }
 
 sub _deepload {
     my $pkg  = shift; # does nothing
@@ -147,9 +150,6 @@ sub _deepload {
         . "' (or $allcount collapsable subelements, $ccount Composites)";
 }
 
-our $error;          # for the whole class
-my %fields = ();
-
 # Constructors
 
 sub new {
@@ -174,18 +174,7 @@ sub new {
     return $self;
 }
 
-sub code {
-    my $self = shift;
-    @_ and $self->{code} = shift;
-    return $self->{code};
-}
-
-sub codelist {
-    my $self = shift;
-    # my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can create objects";
-    # my $part = $spec->get_spec('message');
-    Business::EDI::CodeList->new_codelist(@_);
-}
+# BIG Complicated META-Constructors!!
 
 sub _common_constructor {
     my $self = shift;
@@ -243,7 +232,10 @@ sub _common_constructor {
     $unblessed or return;
     my $new = bless($unblessed, __PACKAGE__ . '::' . ucfirst($type));
     $new->spec($spec);
-    $new->{code} = $code;
+    $new->{_permitted}->{code}  = 1;
+    $new->{_permitted}->{label} = 1;
+    $new->{code}  = $code;
+    $new->{label} = $part->{$code}->{label};
     # $new->debug($debug{$type}) if $debug{$type};
     foreach (@required) {
         unless (defined $new->part($_)) {
@@ -288,13 +280,19 @@ sub _def_based_constructor {
     $new->spec($spec);
     $new->{_permitted}->{code}         = 1;
     $new->{_permitted}->{message_code} = 1;
+    $new->{_permitted}->{label}        = 1;
     $new->{code} = $code;
     $new->{message_code} = $message_code;   # same as code for messages, different for SGs
+    $new->{label} = $page->{$page_code}->{label};
     if ($type eq 'segment_group') {
         $new->{sg_code}  = $page_code;   
     }
     return $new;
 }
+
+# Fundamental constructor calls for different object types
+# These are here so you can just "use Business::EDI;" and not have to worry about using different 
+# modules for different data objects.  
 
 sub segment {
     my $self = shift;
@@ -305,6 +303,15 @@ sub segment_group {
     my $self = shift;
     return $self->_def_based_constructor('segment_group', @_);
 # The difference is that segment_group must deal with repeatable segments, other segment groups, etc.
+}
+
+# TODO: rename detect_version one something more clueful
+# The difference is that message() expects you to have declared an EDI spec version already, whereas detect_version
+# just looks at the contents of the passed data, attempting to extract the encoded version there.
+
+sub detect_version {
+    my $self = shift;
+    return Business::EDI::Message->new(@_);
 }
 
 sub message {
@@ -326,6 +333,13 @@ sub composite {
     Business::EDI::Composite->new(@_);
 }
 
+sub codelist {
+    my $self = shift;
+    # my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can create objects";
+    # my $part = $spec->get_spec('message');
+    Business::EDI::CodeList->new_codelist(@_);
+}
+
 sub spec_page {
     my $self = shift;
     my $spec = $self->spec or croak "You must set a spec version (via constructor or spec method) before EDI can retrieve part of it";
@@ -340,6 +354,13 @@ sub get_spec {
 }
 
 # Accessor get/set methods
+
+sub code {
+    my $self = shift;
+    @_ and $self->{code} = shift;
+    return $self->{code};
+}
+
 sub spec {        # spec(code)
     my $self = shift;
     if (@_) {                                        #  Arg(s) mean we are constructing
@@ -622,13 +643,6 @@ sub subelement {
     return $new;
 }
 
-# TODO: rename this something more clueful
-
-sub detect_version {
-    my $self = shift;
-    return Business::EDI::Message->new(@_);
-}
-
 
 # not really xpath, but xpath-lite-like.  the idea here is to never crash on a valid path, just return undef.
 sub xpath {
@@ -662,7 +676,59 @@ sub xpath_value {
     return map {$_->value} @hits;
 }
 
+our $cgi;
+# Write your own CSS
+sub html {
+    my $self    = shift;
+    my $empties = @_ ? shift : 0;
+    my $indent  = @_ ? shift : 0;
+    my $obtype  = ref $self or return $self;
+    my $x = ' ' x $indent;
+
+    my $extra = '';
+    $obtype =~ s/^Business::EDI::// or return "$x<div class='edi_error'>$obtype object</div>";
+    if ($obtype =~ /::(.*)$/) {
+        $extra = " edi_$1";
+        $extra  =~ s/::/_/;
+        $obtype =~ s/::.*$//;
+    }
+
+    my $html = "$x<div class='edi_node edi_$obtype$extra'>";
+    my %tophash;
+    foreach (qw/code label desc value/) { # get top values, if existing
+        $tophash{$_} = $self->$_ if (eval {$self->$_});
+    }
+    $cgi ||= CGI->new();
+    foreach (qw/code label desc value/) { # same order, w/ some fanciness for label (title attribute based on desc)
+        defined $tophash{$_} or next;
+        my $attrs = {class=>"edi_$_"};
+        ($_ eq 'label') and $attrs->{title} = $tophash{desc};
+        $html .= "\n$x    " . $cgi->span($attrs, $self->$_);
+    }
+
+    my @keys = grep {$_ ne 'label' and $_ ne 'value' and $_ ne 'code' and $_ ne 'desc'} $self->part_keys;   # disclude stuff we already got
+    #my @parts = map {$self->part($_)} $self->part_keys;
+    my @parts = $self->{array} ? @{$self->{array}} : map {$self->part($_)} @keys;
+    $debug and print STDERR $tophash{label}, " has ", scalar(@keys),  " in part_keys: ", join(' ', @keys), "\n";
+    # $_->{array} and print "$tophash{label} has ", scalar(@{$_->{array}}), " in array: " . join(' ', map {$_->{code}} @{$_->{array}}), "\n";
+    $debug and print STDERR $tophash{label}, " has ", scalar(@parts), " in  'parts' : ", join(' ', map {ref($_) ? $_->{code} : $_} @parts), "\n";
+    if (@parts) {
+        $html .= "\n$x    <ul>";
+        foreach (@parts) {
+            (ref $_ and $_->{code}) or next;
+            $debug and print STDERR "html(): $tophash{label} => " . $_->{code} . " subcall\n";
+            $html .= "\n$x    <li>\n" . $_->html($empties, $indent + 8) . "\n$x    </li>";
+        }
+        $html .= "\n$x    </ul>"
+    }
+    return "$html\n$x</div>";
+}
+
+
 1;
+
+# END of Business::EDI
+# =======================================================================================
 
 package Business::EDI::Segment_group;
 use strict; use warnings;
@@ -677,6 +743,13 @@ sub sg_code {
     return $self->{sg_code};
 }
 
+sub desc {  # build a description on the fly
+    my $self = shift or return;
+    my $sgcode = $self->sg_code;
+    $sgcode =~ s/^SG//i;
+    return $self->{message_code} . " Segment Group $sgcode";
+}
+
 # Business::EDI::Segment_group gets its own part method to handle meta-mapped SGs INSIDE other SGs,
 # but it falls back to the main part method after that.
 
@@ -687,25 +760,26 @@ sub part {
     my $code  = $self->{message_code} or return $self->carp_error("Message type (code) unset.  Cannot assess metamapping.");
     my $spec  = $self->{spec}         or return $self->carp_error("Message spec (code) unset.  Cannot assess metamapping.");
     my $sg    = $spec->metamap($code, $name);
+    my $str_spec = "in spec " . $spec->version;
     if ($sg) {
-        $debug and warn "SG Message/field '$code/$name' ==> '$code/all_$sg' via mapping";
+        $debug and warn "SG Message/field '$code/$name' ==> '$code/all_$sg' via mapping $str_spec";
         if ($sg =~ /\//) {
             my $obj;
             my @chunks = split '/', $sg;
             my $first  = shift @chunks;   
             my $last   = pop   @chunks;   
-            $first eq $self->{sg_code} or return $self->carp_error("Mapped target $sg descends from $code/$first, not " . $self->{sg_code});
+            $first eq $self->{sg_code} or return $self->carp_error("Mapped target $sg descends from $code/$first $str_spec, not " . $self->{sg_code});
             foreach (@chunks) {
                 $obj = $obj ? $obj->SUPER::part("all_$_") : $self->SUPER::part("all_$_");
-                $obj or warn "Mapped SG $sg part 'all_$_' not found";
+                $obj or warn "Mapped SG $sg part 'all_$_' not found $str_spec";
                 $obj or return;
             }
             return $obj ? $obj->SUPER::part("all_$last", @_) : $self->SUPER::part("all_$last", @_);  # only the last part gets the remaining args
         } else {
-            return $self->carp_error("Mapped target $sg is not under " . $self->{code});
+            return $self->carp_error("Mapped target $sg is not under " . $self->{code} . " $str_spec");
         }
     } else {
-        $debug and warn "Message/field '$code/$name'  not mapped.  Skipping metamapping";
+        $debug and warn "Message/field '$code/$name' not mapped $str_spec.  Skipping metamapping";
     }
     return $self->SUPER::part($name, @_);
 }
@@ -743,7 +817,7 @@ sub part {
 # This is a very high level method.
 # We look inside a message body BEFORE we know what it is, and what spec it was written to.
 # Second argument is a flag for "string only", in which case we just return the composed version string (e.g. 'D96A')
-# otherwise we return a Business::EDI::Message object, or null on failure.
+# otherwise we return a Business::EDI::Message object, or undef on failure.
 #
 # my $message = Business:EDI::Message->new($body);
 # my $version = Business:EDI::Message->new($body, 1);

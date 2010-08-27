@@ -24,7 +24,7 @@ sub new {
 1;
 __END__
 
-Data comes in looking like, where the hashref is what gets passed to new():
+Data comes in looking like this, where the hashref is what gets passed to new():
 
     'BGM',
     {

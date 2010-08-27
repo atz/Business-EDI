@@ -1457,7 +1457,7 @@ sub new {
     my $self = $class->SUPER::unblessed($value, [(keys %{$chunk->{parts}})], $debug);     # send the "parts" hashref
     $self->{ccode} = $key;             # the Cxxx key
     $self->{code}  = $key;             # the Cxxx key
-    $self->{value} = $value;           # the hashref value associated with the key
+#   $self->{value} = $value;           # the hashref value associated with the key -- not a value
     $self->{label} = $chunk->{label};  # label from spec
     $self->{desc}  = $chunk->{desc};   # desc from spec
     $self->{repeat}= $repeat if $repeat;

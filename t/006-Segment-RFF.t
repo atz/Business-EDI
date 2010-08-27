@@ -3,7 +3,7 @@
 
 use strict; use warnings;
 
-use Test::More tests => 18;
+use Test::More tests => 17;
 
 BEGIN {
     use_ok('Data::Dumper');
@@ -38,7 +38,6 @@ is_deeply($seg1153, $rff->partC506->part(1153),    "partC506->part(1153) accesso
 is_deeply($seg1153, $rff->part('C506')->part(1153),"part('C506')->part(1153) accessor");
 is_deeply($seg1153, $rff->part('C506')->part1153,  "part('C506')->part1153 Autoload accessor");
 $verbose and note("RFF->segC506->value: " . $rff->segC506->value);
-is($rff->segC506->value, $data->{C506}, "segC506->value");
 
 ok($codemap = $rff->segC506->codemap, "Business::EDI::Segment::RFF->new(...)->segC506->codemap");
 

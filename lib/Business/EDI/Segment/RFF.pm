@@ -38,7 +38,10 @@ sub new {
     }
     my $self = bless($obj, $class);
     $self->spec or $self->spec('default');
-    $self->{code} = 'RFF';
+    $self->{code}  = 'RFF';
+    $self->{label} = 'REFERENCE';
+    $self->{_permitted}->{label} = 1;
+    $self->{_permitted}->{code}  = 1;
     # print "blessed: " , Dumper($self);  use Data::Dumper;
     foreach (@required_codes) {
         unless (defined $obj->part($top)->part($_)) {
