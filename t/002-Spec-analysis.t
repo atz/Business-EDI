@@ -200,7 +200,7 @@ foreach (@versions) {
 }
 
 
-my @msgs = qw/ ORDERS ORDRSP INVOIC /;
+my @msgs = qw/ ORDERS ORDRSP INVOIC OSTRPT /;
 
 note "Analyzing " . scalar(@versions) . " spec versions";
 

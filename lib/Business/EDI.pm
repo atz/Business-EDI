@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 # use Data::Dumper;
 
-our $VERSION = 0.04;
+our $VERSION = 0.05;
 
 use UNIVERSAL::require;
 use Data::Dumper;
